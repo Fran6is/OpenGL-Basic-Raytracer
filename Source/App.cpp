@@ -14,6 +14,7 @@
 #include <Path.h>
 #include <RaytracingContainers.h>
 #include "CameraController.h"
+#include <FileEditing.h>
 
 #define   FORCE_USE_NVIDIA 0
 

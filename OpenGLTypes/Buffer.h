@@ -30,4 +30,4 @@ public:
 };
 
 void PrepareQuadBuffer(ObjectBuffer& OutData);
-void PrepareFramebuffer();
+void PrepareFramebufferWithTwoTextureAttachment(uint32_t& FramebufferID, uint32_t& Texture1, uint32_t& Texture2);

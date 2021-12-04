@@ -5,7 +5,12 @@ uniform mat3  ICameraBasis    = mat3(1.0);
 uniform vec3  ICameraPosition = vec3(0.0);
 uniform float ICameraFOV      = 90;
 
+
 struct AHitResult { bool bWasAHit; vec3 HitLocation; vec3 HitNormal; int ObjectIndex; float Distance; };
+
+#define OBJECT_PLANE  12
+#define OBJECT_SPHERE 100
+
 struct Object
 {
     int   Type;
@@ -20,8 +25,7 @@ struct Object
     float IOR;
 };
 
-#define OBJECT_PLANE  12
-#define OBJECT_SPHERE 100
+
 
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection);
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection);
@@ -59,7 +63,7 @@ void main()
     //Trace
     AHitResult HitResult = TraceScene(SceneObjects, 2, RayOrigin, RayDirection);
     
-    gl_FragColor = vec4(HitResult.bWasAHit ? HitResult.HitNormal : 0.0, 0.0);
+    gl_FragColor = vec4(HitResult.bWasAHit ? HitResult.HitNormal : 0.05, 0.0);
 }
 
 //Goes to calculation file
@@ -141,7 +145,10 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 		if(Y <= Sphere.Scale) //Distance to ray projection end point must be inside the sphere 
 		{
-			float X = sqrt(Sphere.Scale * Sphere.Scale - Y * Y); //Warning: this can be undefined if sphere radius is less than y
+			float X = Sphere.Scale * Sphere.Scale - Y * Y; //this will evaluate to a negative value if we're inside the sphere
+            if(X < 0.0) return HitResult; 
+
+            X = sqrt(X);
 
             float T1 = DistanceToSphere - X; //first point of ray intersection with the sphere
             float T2 = DistanceToSphere + X; //second point of intersection/ray exit point

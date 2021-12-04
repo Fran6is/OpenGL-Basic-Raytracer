@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(OpenGL)
+project(Raytracing)
 
 set(CMAKE_CXX_STANDARD 11)
 
 configure_file(CMakeProjectMacros.h.in Project-macros/CMakeProjectMacros.h)
 
 #TODO: Find some other way to add these files
-add_executable(OpenGL 
+add_executable(Raytracing 
             Source/App.cpp 
             Source/Camera.h
             Source/Camera.cpp
@@ -19,6 +19,8 @@ add_executable(OpenGL
             Source/SaveCamera.cpp
             Source/Path.h
             Source/Path.cpp
+            Source/FileEditing.h
+            Source/FileEditing.cpp
             Source/RaytracingContainers.h
             OpenGLTypes/Buffer.h
             OpenGLTypes/Buffer.cpp
@@ -36,7 +38,7 @@ include_directories( Dependencies/Include  "${PROJECT_SOURCE_DIR}/Source" "${PRO
 
 find_library(GLFW_LIBRARY glfw3 glfw3.lib "${PROJECT_SOURCE_DIR}/Dependencies/Lib")
 
-target_link_libraries(OpenGL LINK_PUBLIC ${GLFW_LIBRARY} opengl32.lib)
+target_link_libraries(Raytracing LINK_PUBLIC ${GLFW_LIBRARY} opengl32.lib)
 
 
 

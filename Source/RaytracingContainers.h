@@ -1,6 +1,8 @@
 #pragma once
 
+using namespace glm;
 
+//BEGIN
 #define OBJECT_PLANE  12
 #define OBJECT_SPHERE 100
 
@@ -8,11 +10,11 @@ struct Object
 {
     int   Type;
     int   ID;
-    glm::vec3  Position;
-    glm::vec3  Rotation;
+    vec3  Position;
+    vec3  Rotation;
     float Scale;
 
-    glm::vec3  Color;
+    vec3  Color;
     float Specularity;
     float Reflectivity; //btw 0 and 1
     float IOR;
@@ -24,9 +26,9 @@ struct Object
 struct Light
 {
     int Type;
-    glm::vec3 Position;
+    vec3 Position;
 
-    glm::vec3 Color;
+    vec3 Color;
     float Intensity;
     float Attenuation_Linear;
     float Attenuation_Quadratic;
@@ -41,7 +43,8 @@ struct Light
 struct RenderSettings
 {
     int  ShadingType;
-    bool bAllowReflection = false;
-    bool bAllowRefraction = false;
-    int  MaximumReflectionBounces = 1;
+    bool bAllowReflection;
+    bool bAllowRefraction;
+    int  MaximumReflectionBounces;
 };
+//END

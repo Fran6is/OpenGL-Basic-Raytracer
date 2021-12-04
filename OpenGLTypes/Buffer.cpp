@@ -70,5 +70,10 @@ static void PrepareQuadBuffer(ObjectBuffer& OutData)
     std::cout << "Quad buffer prepared! \n";
 }
 
+void PrepareFramebufferWithTwoTextureAttachment(uint32_t& FramebufferID, uint32_t& Texture1, uint32_t& Texture2) 
+{
+    
+}
+
 
 
