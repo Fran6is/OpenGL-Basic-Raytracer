@@ -19,7 +19,11 @@ Shader::Shader(const std::string& VertexShaderFilePath, const std::string& Fragm
     if (VertexLoadingWasSuccessful && FragmentLoadingWasSuccessful)
     {
         //std::cout << FragmentShaderCode << "\n";
-        ProgramID = CompileShaderCode(VertexShaderCode, FragmentShaderCode);
+        ProgramID = CompileShaderCode(
+            VertexShaderCode, 
+            FragmentShaderCode,
+            VertexShaderFilePath,
+            FragmentShaderFilePath);
     }
 }
 
@@ -46,7 +50,12 @@ bool Shader::LoadShaderFromFile(const std::string& ShaderFilePath, std::string& 
 }
 
 
-unsigned int Shader::CompileShaderCode(const std::string& VertexShaderCode, const std::string& FragmentShaderCode)
+unsigned int Shader::CompileShaderCode(
+    const std::string& VertexShaderCode, 
+    const std::string& FragmentShaderCode, 
+    const std::string& VertexShaderFilePath,
+    const std::string& FragementShaderFilePath
+    )
 {
     const char* shaderSource_C_str = VertexShaderCode.c_str();
 
@@ -64,7 +73,7 @@ unsigned int Shader::CompileShaderCode(const std::string& VertexShaderCode, cons
     if (!success)
     {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cout << VertexShaderFilePath << " \t" << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
     //Fragment Shader
@@ -80,7 +89,7 @@ unsigned int Shader::CompileShaderCode(const std::string& VertexShaderCode, cons
     if (!success)
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cout << FragementShaderFilePath << "\t" << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
     // Create and link to a program
@@ -93,6 +102,9 @@ unsigned int Shader::CompileShaderCode(const std::string& VertexShaderCode, cons
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+
+        std::cout << VertexShaderFilePath << "\n";
+        std::cout << FragementShaderFilePath << "\n";
         std::cout << "ERROR::PROGRAM::COMPILATION_FAILED\n" << infoLog << std::endl;
         assert(success && "Shader compilation error");
     }
@@ -217,6 +229,6 @@ void Shader::SetMat4(const std::string& VariableName, const glm::mat4& Matrix) c
 
 void Shader::ReportInvalidUniformName(const char* UniformName, const char* FunctionName, int LINE) const
 {
-    std::cerr << "Log: No Uniform variable with name '" << UniformName << "' found in your shader program. Uniforms can also be removed from program if not used. ::"
+    std::cerr << "Shader::ReportInvalidUniformName::Log: No Uniform variable with name '" << UniformName << "' found in your shader program. Uniforms can be removed from program if not used. ::"
         << FunctionName << ", line " << LINE << std::endl;
 }

@@ -3,7 +3,7 @@
 
 
 
-class ObjectBuffer
+class QuadBuffer
 {
 
     uint32_t VAO{};
@@ -14,7 +14,7 @@ class ObjectBuffer
     bool bPreparedBuffer = false;
 
 private:
-    friend void PrepareQuadBuffer(ObjectBuffer& OutData);
+    friend void PrepareQuadBuffer(QuadBuffer& OutData);
 
 public:
 
@@ -26,8 +26,10 @@ public:
     const uint32_t& GetEBO()const{ return EBO;}
     const uint32_t& Get_EBO_Count()const{ return EBO_Count;}
 
-    ~ObjectBuffer();
+    ~QuadBuffer();
 };
 
-void PrepareQuadBuffer(ObjectBuffer& OutData);
-void PrepareFramebufferWithTwoTextureAttachment(uint32_t& FramebufferID, uint32_t& Texture1, uint32_t& Texture2);
+void PrepareQuadBuffer(QuadBuffer& OutData);
+
+//when binding, 'GPositionTex' will be 'GL_COLOR_ATTACHMENT0', 'GNormalTex' is 'GL_COLOR_ATTACHMENT1'
+void PrepareFramebufferWithTwoTextureAttachments(size_t& GFramebuffer, size_t& GPositionTex, size_t& GNormalTex);

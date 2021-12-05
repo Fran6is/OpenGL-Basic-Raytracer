@@ -14,14 +14,20 @@ Texture::Texture(const FTexImage& ImageData, const FTextureParameters& Parameter
     SetParameters(Parameters);
 }
 
+void Texture::BindTexture(GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt)
+{
+    glActiveTexture(GL_TEXTURE0 + TextureUnitToBindAt); 
+    glBindTexture(TextureType, TextureID);
+}
+
 void Texture::Bind(unsigned int TextureUnit) const
 {
     if( (Width + Height) == 0)
     {
         std::cerr << "Texture::Bind: seems you haven't called 'SetTexImage2D()' yet, because texture's width and height is zero \n";
     }
-    glActiveTexture(GL_TEXTURE0 + TextureUnit); 
-    glBindTexture(TextureType, TextureID);
+    
+    Texture::BindTexture(TextureType, TextureID, TextureUnit);
 }
 
 void Texture::UnBind() const

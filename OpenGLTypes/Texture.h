@@ -58,4 +58,6 @@ public:
     void SetParameters(const FTextureParameters& Parameters) const;
 
     void SetTexImage2D(const FTexImage& ImageData, bool bShouldGenerateMipMaps = false);
+
+    static void BindTexture( GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt = 0 );
 };

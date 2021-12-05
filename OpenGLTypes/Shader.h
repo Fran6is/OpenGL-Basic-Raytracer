@@ -26,7 +26,7 @@ public:
 private:
     bool LoadShaderFromFile(const std::string& ShaderFilePath, std::string& OutShaderCode);
     
-    unsigned int CompileShaderCode(const std::string& VertexShaderCode, const std::string& FragmentShaderCode);
+    unsigned int CompileShaderCode(const std::string& VertexShaderCode, const std::string& FragmentShaderCode,  const std::string& VertexShaderFilePath, const std::string& FragmentShaderFilePath);
 
     void ReportInvalidUniformName(const char* UniformName, const char* FunctionName, int LINE) const;
 

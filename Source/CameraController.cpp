@@ -1,25 +1,22 @@
 #include "CameraController.h"
 
-std::ostream& operator<<(std::ostream& Cout, const glm::vec3& Vector);
-std::ostream& operator<<(std::ostream& Cout, const glm::mat4& Matrix);
-std::ostream& operator<<(std::ostream& Cout, const glm::vec4& Vector);
+#include <GlmTransformsPrint.h>
 
-
-glm::mat3 ACameraController::GetCameraBasis()
+glm::mat3 ACameraController::GetCameraBasis() const
 {
     if(MountedCamera)  return glm::mat3(CameraXVector, CameraYVector, CameraZVector);
     
     return glm::mat3(1.0);
 }
 
-glm::vec3 ACameraController::GetCameraPosition()
+glm::vec3 ACameraController::GetCameraPosition() const
 {
     if(MountedCamera) return CameraPosition;
     
     return glm::vec3(0);
 }
 
-float ACameraController::GetCameraFOV()
+float ACameraController::GetCameraFOV() const
 {
     if(MountedCamera) return MountedCamera->GetFOV();
     

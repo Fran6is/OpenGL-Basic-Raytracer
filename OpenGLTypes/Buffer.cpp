@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-ObjectBuffer::~ObjectBuffer() 
+QuadBuffer::~QuadBuffer() 
 {
     std::cout << "Quad buffer deleted! \n";
     glDeleteVertexArrays(1, &VAO);
@@ -11,13 +11,13 @@ ObjectBuffer::~ObjectBuffer()
     glDeleteBuffers(1, &EBO);
 }
 
-void ObjectBuffer::Prepare() 
+void QuadBuffer::Prepare() 
 {
     if(!bPreparedBuffer) 
         PrepareQuadBuffer(*this);
 }
 
-void ObjectBuffer::BindVAO() const
+void QuadBuffer::BindVAO() const
 {
     if(bPreparedBuffer) 
         glBindVertexArray(VAO);
@@ -38,7 +38,7 @@ const unsigned int QuadDrawIndices[]
     2, 3, 0
 };
 
-static void PrepareQuadBuffer(ObjectBuffer& OutData)
+void PrepareQuadBuffer(QuadBuffer& OutData)
 {
     
     //Quad
@@ -70,9 +70,50 @@ static void PrepareQuadBuffer(ObjectBuffer& OutData)
     std::cout << "Quad buffer prepared! \n";
 }
 
-void PrepareFramebufferWithTwoTextureAttachment(uint32_t& FramebufferID, uint32_t& Texture1, uint32_t& Texture2) 
+extern unsigned int SCR_WIDTH;
+extern unsigned int SCR_HEIGHT;
+void PrepareFramebufferWithTwoTextureAttachments(size_t& GFramebuffer, size_t& GPositionTex, size_t& GNormalTex) 
 {
+    SCR_WIDTH = 800;
+    SCR_HEIGHT = 600;
+    glGenFramebuffers(1, &GFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, GFramebuffer);
     
+    // - Position color buffer
+    glGenTextures(1, &GPositionTex);
+    glBindTexture(GL_TEXTURE_2D, GPositionTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GPositionTex, 0); //attach
+    
+    // - Normal color buffer
+    glGenTextures(1, &GNormalTex);
+    glBindTexture(GL_TEXTURE_2D, GNormalTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, GNormalTex, 0); //attach
+    
+
+    // - Specify attahment to draw to
+    size_t Attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, Attachments); 
+
+    // unsigned int rboDepth;
+    // glGenRenderbuffers(1, &rboDepth);
+    // glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+	    std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    }   
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 

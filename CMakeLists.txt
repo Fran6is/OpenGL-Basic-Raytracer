@@ -9,6 +9,10 @@ configure_file(CMakeProjectMacros.h.in Project-macros/CMakeProjectMacros.h)
 #TODO: Find some other way to add these files
 add_executable(Raytracing 
             Source/App.cpp 
+            Source/GlmTransformsPrint.h
+            Source/GlmTransformsPrint.cpp
+            Source/SendDataToShader.h
+            Source/SendDataToShader.cpp
             Source/Camera.h
             Source/Camera.cpp
             Source/CameraController.h
@@ -19,9 +23,9 @@ add_executable(Raytracing
             Source/SaveCamera.cpp
             Source/Path.h
             Source/Path.cpp
-            Source/FileEditing.h
-            Source/FileEditing.cpp
-            Source/RaytracingContainers.h
+            Source/FilesCopy.h
+            Source/FilesCopy.cpp
+            Source/RaytracingSceneStructs.h
             OpenGLTypes/Buffer.h
             OpenGLTypes/Buffer.cpp
             Source/glad.c 
