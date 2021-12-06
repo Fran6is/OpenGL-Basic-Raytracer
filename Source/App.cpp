@@ -91,36 +91,7 @@ int main()
     ShaderProgramsWindowResize.emplace_back(&Shader_Geometry);
     ShaderProgramsWindowResize.emplace_back(&Shader_LightCalculation);
 
-    //Scene objects
-    std::vector<Object> SceneObjects; SceneObjects.reserve(5);
-    Object SceneDefaultObject = {OBJECT_SPHERE, 0, glm::vec3(0), glm::vec3(0), 1, glm::vec3(0), 0, 0, 0};
-        //object1
-    SceneDefaultObject.Position = glm::vec3(0, 0, 3);
-    SceneDefaultObject.Color    = glm::vec3(1, 0, 0);
-    SceneDefaultObject.Scale    = 2;
-    AddObjectToScene(SceneObjects, SceneDefaultObject);
-        //object2
-    SceneDefaultObject.Position = glm::vec3(-5, 0, 2);
-    SceneDefaultObject.Color    = glm::vec3(0, 1, 0);
-    SceneDefaultObject.Scale    = 3;
-    AddObjectToScene(SceneObjects, SceneDefaultObject);
-        //object3
-    SceneDefaultObject.Position = glm::vec3(5, 0, 3);
-    SceneDefaultObject.Color    = glm::vec3(0, 0, 1);
-    SceneDefaultObject.Scale    = 2;
-    AddObjectToScene(SceneObjects, SceneDefaultObject);
-
-    //Scene lights
-    std::vector<Light> SceneLights; SceneLights.reserve(3);
-    Light SceneDefaultLight = {LIGHT_POINT, 0, glm::vec3(0), glm::vec3(0), glm::vec3(0), 1, 0.15f, 1.f, false };
-
     
-    //Framebuffer
-    // size_t GFramebuffer, GPositionTex, GNormalTex;
-    // PrepareFramebufferWithTwoTextureAttachments(GFramebuffer, GPositionTex, GNormalTex);
-    // GBufferPositionTextureAttachmentRef = &GPositionTex;
-    // GBufferNormalTextureAttachmentRef   = &GNormalTex;
-
     //Framebuffer setup
     FTexImage TexImage2dParams;
     TexImage2dParams.TargetTextureType = GL_TEXTURE_2D;
@@ -145,21 +116,45 @@ int main()
     GFramebuffer.AddFramebufferForWindowResizeCallback(&GFramebuffer);
     GFramebuffer.SelectAttachmentsToDrawTo(AttachmentNames);
 
-    Shader_Geometry.Use();
-    Shader_Geometry.SetInt("iGPosition", 2);
-    Shader_Geometry.SetInt("iGNormal",   3);
+    GLuint GPositionTex = GFramebuffer.GetTextureAttachmentID("GPosition");
+    GLuint GNormalTex   = GFramebuffer.GetTextureAttachmentID("GNormal");
 
-    Shader_LightCalculation.Use();
-    Shader_LightCalculation.SetInt("iGPosition", 2);
-    Shader_LightCalculation.SetInt("iGNormal",   3);
+    //Scene objects
+    std::vector<Object> SceneObjects; SceneObjects.reserve(5);
+    Object SceneDefaultObject = {OBJECT_SPHERE};
+        //object1
+    SceneDefaultObject.Position = glm::vec3(0, 0, 3);
+    SceneDefaultObject.Color    = glm::vec3(1, 0, 0);
+    SceneDefaultObject.Scale    = 2;
+    AddObjectToScene(SceneObjects, SceneDefaultObject);
+        //object2
+    SceneDefaultObject.Position = glm::vec3(-5, 0, 2);
+    SceneDefaultObject.Color    = glm::vec3(0.01, 1, 0.01);
+    SceneDefaultObject.Scale    = 3;
+    AddObjectToScene(SceneObjects, SceneDefaultObject);
+        //object3
+    SceneDefaultObject.Position = glm::vec3(5, 0, 3);
+    SceneDefaultObject.Color    = glm::vec3(0, 0, 1);
+    SceneDefaultObject.Scale    = 2;
+    AddObjectToScene(SceneObjects, SceneDefaultObject);
 
-    //Send in uniform data
-    SendRenderDataToShader(SceneObjects, Shader_Geometry);
-    SendRenderDataToShader(SceneObjects, Shader_LightCalculation);
+    //Scene lights
+    std::vector<Light> SceneLights; SceneLights.reserve(3);
+    Light SceneDefaultLight;
+    SceneDefaultLight.Attenuation_Linear    = 0.05f;
+    SceneDefaultLight.Attenuation_Quadratic = 0.005f;
     
-    //Delta time
-    float DeltaTime = 0;
-    float LastTime  = 0;
+    SceneDefaultLight.Type = LIGHT_POINT;
+    SceneDefaultLight.Color     = vec3(1);
+    SceneDefaultLight.Position  = vec3(0, -10, 0);
+    SceneDefaultLight.Intensity = 0.1f;
+    AddLightToScene(SceneLights, SceneDefaultLight);
+
+    SceneDefaultLight.Type = LIGHT_POINT;
+    SceneDefaultLight.Color     = vec3(1.f, 1.f, 0.1f);
+    SceneDefaultLight.Position  = vec3(0, 2, 0);
+    SceneDefaultLight.Intensity = 0.85f;
+    AddLightToScene(SceneLights, SceneDefaultLight);
 
     //Render settings
     RenderSettings RenderSetting;
@@ -168,8 +163,25 @@ int main()
     RenderSetting.bAllowRefraction = false;
     RenderSetting.MaximumReflectionBounces = 0;
 
-    GLuint GPositionTex = GFramebuffer.GetTextureAttachmentID("GPosition");
-    GLuint GNormalTex   = GFramebuffer.GetTextureAttachmentID("GNormal");
+    //Send in data (Objects, Lights, Rendersettings)
+    Shader_Geometry.Use();
+    Shader_Geometry.SetInt("iGPosition", 2);
+    Shader_Geometry.SetInt("iGNormal",   3);
+    SendRenderDataToShader(SceneObjects, Shader_Geometry);
+    SendRenderDataToShader(CameraController, Shader_Geometry);
+
+    Shader_LightCalculation.Use();
+    Shader_LightCalculation.SetInt("iGPosition", 2);
+    Shader_LightCalculation.SetInt("iGNormal",   3);
+    SendRenderDataToShader(SceneObjects,     Shader_LightCalculation);
+    SendRenderDataToShader(SceneLights,      Shader_LightCalculation);
+    SendRenderDataToShader(RenderSetting,    Shader_LightCalculation);
+    SendRenderDataToShader(CameraController, Shader_Geometry);
+
+    
+    //Delta time
+    float DeltaTime = 0;
+    float LastTime  = 0;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -196,8 +208,8 @@ int main()
 
         Texture::StaticBindTexture(GL_TEXTURE_2D, GPositionTex,  2);
         Texture::StaticBindTexture(GL_TEXTURE_2D, GNormalTex,    3);
-
         Shader_LightCalculation.Use();
+        SendRenderDataToShader(CameraController, Shader_LightCalculation);
 
         aQuadBuffer.BindVAO();
         glDrawElements(GL_TRIANGLES, aQuadBuffer.Get_EBO_Count(), GL_UNSIGNED_INT, 0);

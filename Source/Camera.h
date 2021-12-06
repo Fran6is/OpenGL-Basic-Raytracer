@@ -38,7 +38,7 @@ class Camera
     glm::vec3 XVector  = glm::vec3(0);
 	glm::vec3 YVector  = glm::vec3(0);
     glm::vec3 ZVector  = glm::vec3(0);
-    glm::vec3 CameraPosition = glm::vec3(0, 0, 20);
+    glm::vec3 CameraPosition = glm::vec3(0, 0, -10);
 
 	float Yaw   {};
 	float Pitch {};

@@ -30,6 +30,7 @@ void ACameraController::MountACamera(Camera* Camera)
     {
         CurrentRotation.Yaw   = MountedCamera->Yaw;
         CurrentRotation.Pitch = MountedCamera->Pitch;
+        CameraPosition = MountedCamera->CameraPosition;
 
         CalculateCameraBasis();
     }
