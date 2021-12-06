@@ -8,13 +8,13 @@ Texture::Texture(GLint TextureType)
 
 Texture::Texture(const FTexImage& ImageData, const FTextureParameters& Parameters, bool bShouldGenerateMipMaps) 
 {
-    this->TextureType = ImageData.TextureType;
+    this->TextureType = ImageData.TargetTextureType;
     glGenTextures(1, &TextureID);
     SetTexImage2D(ImageData, bShouldGenerateMipMaps);
     SetParameters(Parameters);
 }
 
-void Texture::BindTexture(GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt)
+void Texture::StaticBindTexture(GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt)
 {
     glActiveTexture(GL_TEXTURE0 + TextureUnitToBindAt); 
     glBindTexture(TextureType, TextureID);
@@ -27,7 +27,7 @@ void Texture::Bind(unsigned int TextureUnit) const
         std::cerr << "Texture::Bind: seems you haven't called 'SetTexImage2D()' yet, because texture's width and height is zero \n";
     }
     
-    Texture::BindTexture(TextureType, TextureID, TextureUnit);
+    Texture::StaticBindTexture(TextureType, TextureID, TextureUnit);
 }
 
 void Texture::UnBind() const
@@ -35,7 +35,18 @@ void Texture::UnBind() const
 	glBindTexture(TextureType, 0);
 }
 
-void Texture::SetParameters(const FTextureParameters& Parameters) const
+
+void Texture::SetParameters(const FTextureParameters& Parameters) 
+{
+    StaticSetParameters
+    (
+        TextureID,
+        TextureType,
+        Parameters
+    );
+}
+
+void Texture::StaticSetParameters(GLuint TextureID, GLint  TextureType, const FTextureParameters& Parameters)
 {
     //Four opengl parameter settings for now
     //Mappings [ 0 = GL_TEXTURE_WRAP_S, 1 = GL_TEXTURE_WRAP_T, 2 = GL_TEXTURE_MIN_FILTER, 3 = GL_TEXTURE_MAG_FILTER ]
@@ -55,28 +66,42 @@ void Texture::SetParameters(const FTextureParameters& Parameters) const
     glBindTexture(TextureType, 0);
 }
 
-void Texture::SetTexImage2D(const FTexImage& ImageData, bool bShouldGenerateMipMap) 
+
+void Texture::SetTexImage2D(const FTexImage& ImageData, bool bShouldGenerateMipMaps) 
 {
     Width  = ImageData.Width;
     Height = ImageData.Height;
 
-    glBindTexture(TextureType, TextureID);
+    TextureType = ImageData.TargetTextureType;
+
+    StaticSetTexImage2D
+    (
+        ImageData,
+        TextureID,
+        bShouldGenerateMipMaps
+    );
+
+}
+
+void Texture::StaticSetTexImage2D(const FTexImage& ImageData, GLuint TextureID, bool bShouldGenerateMipMap) 
+{
+    glBindTexture(ImageData.TargetTextureType, TextureID);
 
     glTexImage2D(
-    TextureType, 
-    0, 
+    ImageData.TargetTextureType, 
+    ImageData.LOD, 
     ImageData.InternalFormat, 
     ImageData.Width, 
     ImageData.Height, 
-    0, 
+    ImageData.Border, 
     ImageData.Format, 
     ImageData.DataType, 
     ImageData.Data
     );
    
     
-    if(bShouldGenerateMipMap) glGenerateMipmap(TextureType);
-    glBindTexture(TextureType, 0);
+    if(bShouldGenerateMipMap) glGenerateMipmap(ImageData.TargetTextureType);
+    glBindTexture(ImageData.TargetTextureType, 0);
 }
 
 Texture::~Texture() 

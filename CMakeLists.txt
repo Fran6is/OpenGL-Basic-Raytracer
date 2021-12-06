@@ -35,6 +35,8 @@ add_executable(Raytracing
             OpenglTypes/TextureParameters.h
             OpenglTypes/Texture.cpp 
             OpenglTypes/TImageLoader.cpp
+            OpenGLTypes/Framebuffer.h
+            OpenGLTypes/Framebuffer.cpp
             Dependencies/stb_image/stb_image.cpp
          )
 

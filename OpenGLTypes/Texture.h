@@ -4,26 +4,7 @@
 #include "TextureParameters.h"
 #include <iostream>
 
-struct FTexImage
-{
-    GLint InternalFormat = GL_RGBA8;
-    int Width{512};
-	int Height{512};
-    GLint Format = GL_RGB;
-    GLenum DataType = GL_UNSIGNED_BYTE;
-    unsigned char* Data = nullptr;
-    GLint TextureType = GL_TEXTURE_2D;
 
-    static void ResetToDefaults(FTexImage& ImageData)
-    {
-        ImageData.InternalFormat = GL_RGBA8;
-        ImageData.Height = ImageData.Width = 512;
-        ImageData.Format = GL_RGB;
-        ImageData.Data = nullptr;
-        ImageData.TextureType = GL_TEXTURE_2D;
-        
-    }
-};
 
 struct FImageLoader
 {
@@ -52,12 +33,17 @@ public:
 	inline const unsigned int& GetWidth()  const {return  Width; }
 	inline const unsigned int& GetHeight() const { return Height; }
     inline const unsigned int& GetTextureID() const { return TextureID; }
+    inline const int& GetTextureType() const { return TextureType; }
 
-
-    //Texture parameters with a value of 'EnumPropertyName::None' won't be set
-    void SetParameters(const FTextureParameters& Parameters) const;
-
+    void SetParameters(const FTextureParameters& Parameters) ;
     void SetTexImage2D(const FTexImage& ImageData, bool bShouldGenerateMipMaps = false);
 
-    static void BindTexture( GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt = 0 );
+    //static versions
+
+    //Texture parameters with a value of 'EnumPropertyName::None' won't be set
+    static void StaticSetParameters(GLuint TextureID, GLint  TextureType, const FTextureParameters& Parameters);
+
+    static void StaticSetTexImage2D(const FTexImage& ImageData, GLuint TextureID, bool bShouldGenerateMipMap);
+
+    static void StaticBindTexture( GLint TextureType, unsigned int TextureID, unsigned int TextureUnitToBindAt = 0 );
 };

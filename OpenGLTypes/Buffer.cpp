@@ -85,7 +85,7 @@ void PrepareFramebufferWithTwoTextureAttachments(size_t& GFramebuffer, size_t& G
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GPositionTex, 0); //attach
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+0, GL_TEXTURE_2D, GPositionTex, 0); //attach
     
     // - Normal color buffer
     glGenTextures(1, &GNormalTex);
@@ -93,11 +93,11 @@ void PrepareFramebufferWithTwoTextureAttachments(size_t& GFramebuffer, size_t& G
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, GNormalTex, 0); //attach
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+1, GL_TEXTURE_2D, GNormalTex, 0); //attach
     
 
     // - Specify attahment to draw to
-    size_t Attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    size_t Attachments[2] = {   GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1}; //if attaching 
     glDrawBuffers(2, Attachments); 
 
     // unsigned int rboDepth;

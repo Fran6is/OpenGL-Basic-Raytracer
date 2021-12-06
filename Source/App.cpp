@@ -15,6 +15,8 @@
 #include "CameraController.h"
 // #include <FilesCopy.h>
 #include <SendDataToShader.h>
+#include <Framebuffer.h>
+#include <array>
 
 #define   FORCE_USE_NVIDIA 0
 
@@ -29,12 +31,11 @@ void ProcessInput(GLFWwindow *window, float DeltaTime);
 
 void AddObjectToScene(std::vector<Object>& SceneObjects, const Object& NewObject);
 void AddLightToScene(std::vector<Light>& SceneLights, const Light& NewLight);
+
 /* Globals */
 unsigned int SCR_WIDTH  = 800;                         //Accessed by functions 'FramebufferResizeCallback'
 unsigned int SCR_HEIGHT = 600;                         //Accessed by functions 'FramebufferResizeCallback'
-std::vector< const Shader* > ShaderProgramsRef;        //Accessed by functions 'FramebufferResizeCallback', 'main', and 'PrepareFramebufferWithTwoTextureAttachment()'
-size_t* GBufferPositionTextureAttachmentRef = nullptr; //Accessed by functions 'FramebufferResizeCallback'
-size_t* GBufferNormalTextureAttachmentRef   = nullptr; //Accessed by functions 'FramebufferResizeCallback'
+std::vector< const Shader* > ShaderProgramsWindowResize;        //Accessed by functions 'FramebufferResizeCallback', 'main', and 'PrepareFramebufferWithTwoTextureAttachment()'
 /**********/
 
 int main()
@@ -72,7 +73,7 @@ int main()
     CameraController.SetMouseSensitivity(0.15f);
     glfwSetCursorPosCallback(window, &ACameraController::Statics_OnMousePositionChange);
     glfwSetScrollCallback(window, &ACameraController::Statics_FOV);
-
+    
     //Vertex buffer creation
     QuadBuffer aQuadBuffer;
     aQuadBuffer.Prepare();
@@ -87,17 +88,8 @@ int main()
         GetFullPath("/ShaderPrograms/0VertexShader.vert"),
         GetFullPath("/ShaderPrograms/2LightCalculationPass.frag")
     );
-
-    Shader_Geometry.Use();
-    Shader_Geometry.SetInt("iGPosition", 0);
-    Shader_Geometry.SetInt("iGNormal",   1);
-
-    Shader_LightCalculation.Use();
-    Shader_LightCalculation.SetInt("iGPosition", 0);
-    Shader_LightCalculation.SetInt("iGNormal",   1);
-
-    ShaderProgramsRef.emplace_back( &Shader_Geometry ); 
-    ShaderProgramsRef.emplace_back( &Shader_LightCalculation );
+    ShaderProgramsWindowResize.emplace_back(&Shader_Geometry);
+    ShaderProgramsWindowResize.emplace_back(&Shader_LightCalculation);
 
     //Scene objects
     std::vector<Object> SceneObjects; SceneObjects.reserve(5);
@@ -124,10 +116,46 @@ int main()
 
     
     //Framebuffer
-    size_t GFramebuffer, GPositionTex, GNormalTex;
-    PrepareFramebufferWithTwoTextureAttachments(GFramebuffer, GPositionTex, GNormalTex);
-    GBufferPositionTextureAttachmentRef = &GPositionTex;
-    GBufferNormalTextureAttachmentRef   = &GNormalTex;
+    // size_t GFramebuffer, GPositionTex, GNormalTex;
+    // PrepareFramebufferWithTwoTextureAttachments(GFramebuffer, GPositionTex, GNormalTex);
+    // GBufferPositionTextureAttachmentRef = &GPositionTex;
+    // GBufferNormalTextureAttachmentRef   = &GNormalTex;
+
+    //Framebuffer setup
+    FTexImage TexImage2dParams;
+    TexImage2dParams.TargetTextureType = GL_TEXTURE_2D;
+    TexImage2dParams.InternalFormat    = GL_RGBA16F;
+    TexImage2dParams.Width    = SCR_WIDTH;
+    TexImage2dParams.Height   = SCR_HEIGHT;
+    TexImage2dParams.Format   = GL_RGBA;
+    TexImage2dParams.DataType = GL_FLOAT;
+    TexImage2dParams.Data     = NULL;
+
+    FTextureParameters TextureParams;
+    TextureParams.UpSamplingFunction   = ETextureResamplingFunction::NearestNeighbor;
+    TextureParams.DownSamplingFunction = ETextureResamplingFunction::NearestNeighbor;
+
+    std::vector<const char*> AttachmentNames = {"GPosition", "GNormal"};
+    Framebuffer GFramebuffer
+    ( 
+        AttachmentNames,
+        TexImage2dParams, 
+        TextureParams 
+    );
+    GFramebuffer.AddFramebufferForWindowResizeCallback(&GFramebuffer);
+    GFramebuffer.SelectAttachmentsToDrawTo(AttachmentNames);
+
+    Shader_Geometry.Use();
+    Shader_Geometry.SetInt("iGPosition", 2);
+    Shader_Geometry.SetInt("iGNormal",   3);
+
+    Shader_LightCalculation.Use();
+    Shader_LightCalculation.SetInt("iGPosition", 2);
+    Shader_LightCalculation.SetInt("iGNormal",   3);
+
+    //Send in uniform data
+    SendRenderDataToShader(SceneObjects, Shader_Geometry);
+    SendRenderDataToShader(SceneObjects, Shader_LightCalculation);
     
     //Delta time
     float DeltaTime = 0;
@@ -140,9 +168,8 @@ int main()
     RenderSetting.bAllowRefraction = false;
     RenderSetting.MaximumReflectionBounces = 0;
 
-    //Send in uniform data
-    SendRenderDataToShader(SceneObjects, Shader_Geometry);
-    SendRenderDataToShader(SceneObjects, Shader_LightCalculation);
+    GLuint GPositionTex = GFramebuffer.GetTextureAttachmentID("GPosition");
+    GLuint GNormalTex   = GFramebuffer.GetTextureAttachmentID("GNormal");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -151,7 +178,7 @@ int main()
 
             //(1) Geometry pass
             //----------------------------
-        glBindFramebuffer(GL_FRAMEBUFFER, GFramebuffer); 
+        glBindFramebuffer(GL_FRAMEBUFFER, GFramebuffer.GetID()); 
         glClearColor(0.f, 0.0f, 0.0f, 1.f); 
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -167,8 +194,8 @@ int main()
         glClearColor(0, 0.0f, 0.0f, 1.f); 
         glClear(GL_COLOR_BUFFER_BIT );
 
-        Texture::BindTexture(GL_TEXTURE_2D, GPositionTex, 0);
-        Texture::BindTexture(GL_TEXTURE_2D, GNormalTex,   1);
+        Texture::StaticBindTexture(GL_TEXTURE_2D, GPositionTex,  2);
+        Texture::StaticBindTexture(GL_TEXTURE_2D, GNormalTex,    3);
 
         Shader_LightCalculation.Use();
 
@@ -187,12 +214,6 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-
-    
-    glDeleteFramebuffers(1, &GFramebuffer);
-    glDeleteTextures(1,     &GPositionTex);
-    glDeleteTextures(1,     &GNormalTex);
 
     glfwTerminate();
     return 0;
@@ -264,30 +285,31 @@ void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
 
     //Why doesn't my framebuffer texture attachments automatically scale with window resolution?
     //https://stackoverflow.com/questions/23362497/how-can-i-resize-existing-texture-attachments-at-my-framebuffer
-    if(GBufferPositionTextureAttachmentRef && GBufferNormalTextureAttachmentRef)
+    // if(GBufferPositionTextureAttachmentRef && GBufferNormalTextureAttachmentRef)
+    // {
+    //     glBindTexture(GL_TEXTURE_2D,  *GBufferPositionTextureAttachmentRef);
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    //     glBindTexture(GL_TEXTURE_2D,  *GBufferNormalTextureAttachmentRef);
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    //     glBindTexture(GL_TEXTURE_2D, 0);
+    // }
+
+    Framebuffer::OnWindowResize(Width, Height);
+
+
+    if(ShaderProgramsWindowResize.size() > 0)
     {
-        glBindTexture(GL_TEXTURE_2D,  *GBufferPositionTextureAttachmentRef);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL);
-
-        glBindTexture(GL_TEXTURE_2D,  *GBufferNormalTextureAttachmentRef);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-
-
-    if(ShaderProgramsRef.size() > 0)
-    {
-        for(size_t I = 0; I < ShaderProgramsRef.size(); I++)
+        for(size_t I = 0; I < ShaderProgramsWindowResize.size(); I++)
         {
-            if(ShaderProgramsRef[I])
+            if(ShaderProgramsWindowResize[I])
             {
 
-                std::cout << "'FramebufferResizeCallback()'::New dimension passed to shader " << I+1 << "\n";
+                //std::cout << "'FramebufferResizeCallback()'::New dimension passed to shader " << I+1 << "\n";
 
-                ShaderProgramsRef[I]->Use();
-                ShaderProgramsRef[I]->SetVector2("IResolution", glm::vec2(Width, Height));
+                ShaderProgramsWindowResize[I]->Use();
+                ShaderProgramsWindowResize[I]->SetVector2("IResolution", glm::vec2(Width, Height));
             }
         }
         std::cout << "\n";
