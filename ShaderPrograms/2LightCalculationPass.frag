@@ -56,7 +56,6 @@ struct Light
 #define SHADING_DIFFUSE 10
 #define SHADING_DIFFUSE_REFLECT 20
 #define SHADING_DIFFUSE_REFRACT 30
-#define SHADING_DIFFUSE_REFLECT_REFRACT 40
 
 struct RenderSettings
 {
@@ -140,7 +139,7 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	AHitResult HitResult;
 	HitResult.bWasAHit = false;
-    const float CLIP_DISTANCE = 1.0;
+    const float CLIP_DISTANCE = 0.001;
 
 	if(DistanceToSphere >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
 	{
@@ -212,6 +211,7 @@ void Reflect(
     out vec3 RayPosition
 );
 
+float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection);
 //light section end
 
 
@@ -298,7 +298,7 @@ vec3 GetLitColor(
     //if surface is a 100 percent reflective, then there's no point calculating it's diffuse color
     //since it will just blend a 100 percent to it's environment
     if( 
-          (RenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT || RenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT) 
+          (RenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT) 
         &&( RenderSetting.MaximumReflectionBounces > 0 )
         &&(SceneObjects[HitResult.ObjectIndex].Reflectivity >= 1.0)
     )
@@ -333,6 +333,22 @@ vec3 GetLitColor(
             ToLightSource = -CurrentLight.Direction;
         }
         else continue;
+
+        if( CurrentLight.bCastShadow )
+        {
+            
+            if( 
+                ShadowTrace(
+                    SceneObjects,
+                    3,
+                    HitResult.HitLocation + 0.001,
+                    normalize(ToLightSource)
+                )  
+                <= length(ToLightSource)
+            ) continue;
+
+           
+        }
 
         float Attenuation = 1;
 
@@ -415,18 +431,12 @@ void Reflect(
                     RenderSetting
                 );
                     
-                    //For every new ray hit, use the ray instigator's specularity to mix new
-                    //color with Overall 'RootSurfaceHit' color. 
-                    //Since recursion isn't surpported in glsl, which we would have
-                    //used to follow the ray till it hits nothing in the scene; which will become
-                    //our surface color. Alternatively we're stacking up on the initial/root color
-                    //which every new suface hit because it would have been a part of the final color
-                    //anyways.
-                    InitialLitColor = mix(
-                        InitialLitColor, 
-                        SurfaceHit_LitColor, 
-                        clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
-                    );
+                    
+                InitialLitColor = mix(
+                    InitialLitColor, 
+                    SurfaceHit_LitColor, 
+                    clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
+                );
                 
                 OldHitResult = NewHitResult;
                 OldRay_Position  = NewRay_Position;
@@ -434,11 +444,6 @@ void Reflect(
             }
             else 
             {
-                //if no hit result(ray hits surrounding), no need to retrace with same old result in
-                //the next loop iteration since you'll always get the same hit result 
-                //till the max number of bounces is exhausted.
-                //So kindly exit here. or mix with surrounding color, then exit
-
                 InitialLitColor = mix(
                     InitialLitColor, 
                     EnvironmentColor,//texture(CubemapTexture, NewRay_Direction).rgb,
@@ -468,14 +473,32 @@ void Refract( /*out vec3 LitColor, Object SceneObjects[], out HitResult HitResul
     //LitColor = RefractedColor;
 }
 
+float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection)
+{
+    
+    for(int i = 0; i < TotalObjects; i++)
+    {
+        AHitResult HitResult = SceneObjects[i].Type == OBJECT_SPHERE 
+            ?   SphereRayIntersection(SceneObjects[i], RayPosition, RayDirection)
+            :   PlaneRayIntersection( SceneObjects[i], RayPosition, RayDirection) ;
+        
+        if(HitResult.bWasAHit)
+        {
+            return HitResult.Distance;
+        }
+    }
+    
+    return 1000000;
+}
+
 bool ObjectIsReflective(Object Obj, int ShadingType)
 {
     return  (Obj.Reflectivity > 0.)
-         &&(ShadingType == SHADING_DIFFUSE_REFLECT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
+         &&(ShadingType == SHADING_DIFFUSE_REFLECT );
 }
 
 bool ObjectIsRefractive(Object Obj, int ShadingType)
 {
     return  Obj.IOR > 0.
-          &&(ShadingType == SHADING_DIFFUSE_REFRACT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
+          &&(ShadingType == SHADING_DIFFUSE_REFRACT );
 }

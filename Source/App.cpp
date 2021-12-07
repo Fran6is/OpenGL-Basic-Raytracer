@@ -132,7 +132,7 @@ int main()
     std::vector<Object> SceneObjects; SceneObjects.reserve(5);
     Object SceneDefaultObject = {OBJECT_SPHERE};
         //object1
-    SceneDefaultObject.Position = glm::vec3(0, 0, 3);
+    SceneDefaultObject.Position = glm::vec3(0, -2, 3);
     SceneDefaultObject.Color    = glm::vec3(0.5, 0.1, 0.1);
     SceneDefaultObject.Scale    = 2;
     SceneDefaultObject.Specularity = 120;
@@ -164,7 +164,7 @@ int main()
     
     SceneDefaultLight.Type = LIGHT_POINT;
     SceneDefaultLight.Color     = vec3(1, 0.0, 0.0);
-    SceneDefaultLight.Position  = vec3(0, 2 , 0);
+    SceneDefaultLight.Position  = vec3(10, 2 , 0);
     SceneDefaultLight.Intensity = 10.f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
@@ -176,8 +176,8 @@ int main()
 
     //Render settings
     RenderSettings RenderSetting;
-    RenderSetting.ShadingType = SHADING_DIFFUSE_REFLECT;  
-    RenderSetting.MaximumReflectionBounces = 1;
+    RenderSetting.ShadingType = SHADING_DIFFUSE;  
+    RenderSetting.MaximumReflectionBounces = 0;
 
     //Send in data (Objects, Lights, Rendersettings)
     Shader_Geometry.Use();
@@ -198,7 +198,7 @@ int main()
     Shader_PostProcess.SetInt("iGPosition", 2);
     SendRenderDataToShader(CameraController, Shader_PostProcess);
     SendRenderDataToShader_LightsPostProcess(SceneLights, Shader_PostProcess);
-    
+
     //Delta time
     float DeltaTime = 0;
     float LastTime  = 0;

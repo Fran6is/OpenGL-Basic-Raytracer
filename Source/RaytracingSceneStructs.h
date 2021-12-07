@@ -41,7 +41,6 @@ struct Light
 #define SHADING_DIFFUSE 10
 #define SHADING_DIFFUSE_REFLECT 20
 #define SHADING_DIFFUSE_REFRACT 30
-#define SHADING_DIFFUSE_REFLECT_REFRACT 40
 
 struct RenderSettings
 {

@@ -69,6 +69,9 @@ void SendRenderDataToShader( const std::vector<Light>& SceneLights, const Shader
         sprintf(buffer, "ISceneLights[%i].Attenuation_Quadratic", i);
         ShaderProgram.SetFloat(buffer, SceneLight.Attenuation_Quadratic );
 
+        sprintf(buffer, "ISceneLights[%i].bCastShadow", i);
+        ShaderProgram.SetBool(buffer, SceneLight.bCastShadow);
+
         i++;
     }
     

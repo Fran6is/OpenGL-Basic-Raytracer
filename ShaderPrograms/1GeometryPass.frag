@@ -60,7 +60,6 @@ struct Light
 #define SHADING_DIFFUSE 10
 #define SHADING_DIFFUSE_REFLECT 20
 #define SHADING_DIFFUSE_REFRACT 30
-#define SHADING_DIFFUSE_REFLECT_REFRACT 40
 
 struct RenderSettings
 {
@@ -143,8 +142,7 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	AHitResult HitResult;
 	HitResult.bWasAHit = false;
-    const float CLIP_DISTANCE = 1.0;
-
+    const float CLIP_DISTANCE = .001;
 	if(DistanceToSphere >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
 	{
 		float Y = length( (RayPosition + RayDirection * DistanceToSphere) - Sphere.Position );
