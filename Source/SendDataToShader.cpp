@@ -58,11 +58,11 @@ void SendRenderDataToShader(const RenderSettings& RenderSetting, const Shader& S
 
     ShaderProgram.SetInt("IRenderSetting.ShadingType", RenderSetting.ShadingType );
 
-    ShaderProgram.SetBool("IRenderSetting.bAllowReflection", RenderSetting.bAllowReflection );
+    // ShaderProgram.SetBool("IRenderSetting.bAllowReflection", RenderSetting.bAllowReflection );
 
-    ShaderProgram.SetBool("IRenderSetting.bAllowRefraction", RenderSetting.bAllowRefraction );
+    // ShaderProgram.SetBool("IRenderSetting.bAllowRefraction", RenderSetting.bAllowRefraction );
 
-    ShaderProgram.SetInt("IRenderSetting.bMaximumReflectionBounces", RenderSetting.MaximumReflectionBounces );
+    ShaderProgram.SetInt("IRenderSetting.MaximumReflectionBounces", RenderSetting.MaximumReflectionBounces );
     
 }
 void SendRenderDataToShader( const std::vector<Object>& SceneObjects, const Shader& ShaderProgram )
@@ -93,6 +93,9 @@ void SendRenderDataToShader( const std::vector<Object>& SceneObjects, const Shad
 
         sprintf(buffer, "ISceneObjects[%i].Specularity", i);
         ShaderProgram.SetFloat(buffer, SceneObject.Specularity);
+
+        sprintf(buffer, "ISceneObjects[%i].Reflectivity", i);
+        ShaderProgram.SetFloat(buffer, SceneObject.Reflectivity);
 
         sprintf(buffer, "ISceneObjects[%i].IOR", i);
         ShaderProgram.SetFloat(buffer, SceneObject.IOR);

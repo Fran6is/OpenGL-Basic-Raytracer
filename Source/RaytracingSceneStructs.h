@@ -32,8 +32,8 @@ struct Light
 
     vec3  Color     = vec3(0);
     float Intensity = 100;
-    float Attenuation_Linear    = 0.00125f;;
-    float Attenuation_Quadratic = 0.5f;
+    float Attenuation_Linear    = 1.f;;
+    float Attenuation_Quadratic = 1.0f;
 
     bool bCastShadow = false;
 };
@@ -46,7 +46,5 @@ struct Light
 struct RenderSettings
 {
     int  ShadingType = SHADING_DIFFUSE;
-    bool bAllowReflection = false;
-    bool bAllowRefraction = false;
     int  MaximumReflectionBounces = 1;
 };

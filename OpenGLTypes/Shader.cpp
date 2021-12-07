@@ -229,6 +229,5 @@ void Shader::SetMat4(const std::string& VariableName, const glm::mat4& Matrix) c
 
 void Shader::ReportInvalidUniformName(const char* UniformName, const char* FunctionName, int LINE) const
 {
-    // std::cerr << "Shader::ReportInvalidUniformName::Log: No Uniform variable with name '" << UniformName << "' found in your shader program. Uniforms can be removed from program if not used. ::"
-    //     << FunctionName << ", line " << LINE << std::endl;
+    std::cerr << "Shader::Log:: No Uniform with name '" << UniformName << "' found in your shader program. Uniforms can be removed from program if unused. \n";
 }

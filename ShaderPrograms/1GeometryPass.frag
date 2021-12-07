@@ -65,8 +65,6 @@ struct Light
 struct RenderSettings
 {
     int  ShadingType;
-    bool bAllowReflection;
-    bool bAllowRefraction;
     int  MaximumReflectionBounces;
 };
 
@@ -181,7 +179,7 @@ uniform   int    ITotalSceneObjects = 0;
 
 uniform   Object ISceneObjects[TOTAL_SCENE_OBJECTS];
 uniform   Light  ISceneLights[TOTAL_SCENE_LIGHTS];
-uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, false, false, 0);
+uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE,  0);
 
 void main()
 {

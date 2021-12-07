@@ -58,8 +58,6 @@ struct Light
 struct RenderSettings
 {
     int  ShadingType;
-    bool bAllowReflection;
-    bool bAllowRefraction;
     int  MaximumReflectionBounces;
 };
 //light section end
@@ -175,9 +173,10 @@ uniform   Object ISceneObjects[TOTAL_SCENE_OBJECTS];
 //Common End
 
 //Light section begin
+const vec3 EnvironmentColor = vec3(0.5, 0.1, 0.25);
 uniform   int    ITotalSceneLights  = 0;
 uniform   Light  ISceneLights[TOTAL_SCENE_LIGHTS];
-uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, false, false, 0);
+uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, 0);
 
 uniform sampler2D iGPosition;
 uniform sampler2D iGNormal;
@@ -195,9 +194,23 @@ vec3 GetLitColor(
     int TotalSceneLights, 
     Object SceneObjects[TOTAL_SCENE_OBJECTS], 
     out AHitResult HitResult, 
-    out vec3 RayDirection 
+    out vec3 RayDirection,
+    RenderSettings RenderSetting 
     );
+void Reflect(
+    Object SceneObjects[TOTAL_SCENE_OBJECTS], 
+    int TotalSceneObjects, 
+    Light SceneLights[TOTAL_SCENE_LIGHTS],
+    int TotalSceneLights,
+    RenderSettings RenderSetting,
+    AHitResult HitResult,
+    out vec3 InitialLitColor,
+    out vec3 RayDirection,
+    out vec3 RayPosition
+);
+
 //light section end
+
 
 void main()
 {
@@ -228,26 +241,27 @@ void main()
             ITotalSceneLights,
             ISceneObjects,
             HitResult,
-            RayDirection
+            RayDirection,
+            IRenderSetting
         );
 
         //check if object is reflective ( r > 0) and or refractive (IOR > 0). The default  is -1
-        bool bIsReflective = (ISceneObjects[PixelID].Reflectivity > 0.) &&
-                             (  
-                                 IRenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT 
-                              || IRenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT 
-                             );
-        bool bIsRefractive = (ISceneObjects[PixelID].IOR > 0.) &&
-                             (  
-                                 IRenderSetting.ShadingType == SHADING_DIFFUSE_REFRACT 
-                              || IRenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT 
-                             );
-
-        if( bIsReflective )
+        if( ObjectIsReflective(ISceneObjects[PixelID], IRenderSetting.ShadingType) )
         {
+            Reflect(
+                ISceneObjects, 
+                ITotalSceneObjects, 
+                ISceneLights,
+                ITotalSceneLights,
+                IRenderSetting,
+                HitResult,
+                LitColor,
+                RayDirection,
+                RayOrigin
+            );
 
         }
-        else if( bIsRefractive )
+        else if( ObjectIsRefractive(ISceneObjects[PixelID], IRenderSetting.ShadingType) )
         {
 
         }
@@ -256,7 +270,7 @@ void main()
     }
     else
     {
-        gl_FragColor = vec4(0.08);
+        gl_FragColor = vec4(EnvironmentColor, 0.0);
     }
 }
 
@@ -270,9 +284,22 @@ vec3 GetLitColor(
     int TotalSceneLights, 
     Object SceneObjects[TOTAL_SCENE_OBJECTS], 
     out AHitResult HitResult, 
-    out vec3 RayDirection 
+    out vec3 RayDirection,
+    RenderSettings RenderSetting
     )
 {
+    //if surface is a 100 percent reflective, then there's no point calculating it's diffuse color
+    //since it will just blend a 100 percent to it's environment
+    if( 
+          (RenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT || RenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT) 
+        &&( RenderSetting.MaximumReflectionBounces > 0 )
+        &&(SceneObjects[HitResult.ObjectIndex].Reflectivity >= 1.0)
+    )
+    {
+        return vec3(0.0);
+    }
+
+
     vec3 LitColor = vec3(0);
     const vec3 MinimumColorValue = vec3(0.01);
 
@@ -312,6 +339,8 @@ vec3 GetLitColor(
             Attenuation += Distance * CurrentLight.Attenuation_Linear;
             Attenuation += 1.0; //constant
             Attenuation  = 1.0 / Attenuation;
+
+            //return vec3(Attenuation);
         }
         
         ToLightSource = normalize(ToLightSource);
@@ -343,27 +372,79 @@ vec3 GetLitColor(
     return LitColor;
 }
 
-bool ObjectIsReflective(Object Obj, int ShadingType)
+void Reflect(
+    Object SceneObjects[TOTAL_SCENE_OBJECTS], 
+    int TotalSceneObjects, 
+    Light SceneLights[TOTAL_SCENE_LIGHTS],
+    int TotalSceneLights,
+    RenderSettings RenderSetting ,
+    AHitResult HitResult,
+    out vec3 InitialLitColor,
+    out vec3 RayDirection,
+    out vec3 RayPosition
+    )
 {
-    return  Obj.Reflectivity > 0.
-          &&(ShadingType == SHADING_DIFFUSE_REFLECT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
-}
+    AHitResult OldHitResult = HitResult;
+    vec3 OldRay_Position    = RayPosition;
+    vec3 OldRay_Direction   = RayDirection;
 
-bool ObjectIsRefractive(Object Obj, int ShadingType)
-{
-    return  Obj.IOR > 0.
-          &&(ShadingType == SHADING_DIFFUSE_REFRACT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
-}
+    int RayBounces = 0;
+    while( RayBounces++ < RenderSetting.MaximumReflectionBounces )
+    {
+        //First make sure the previous surface hit is reflective before shooting a new ray from there
+        if( SceneObjects[OldHitResult.ObjectIndex].Reflectivity > 0.0 )
+        {
+            vec3 NewRay_Position  = OldHitResult.HitLocation;
+            vec3 NewRay_Direction = reflect(OldRay_Direction, OldHitResult.HitNormal);
+            
+            AHitResult NewHitResult = TraceScene(SceneObjects, TotalSceneObjects, NewRay_Position, NewRay_Direction);
+            if(NewHitResult.bWasAHit)
+            {
 
-void Reflect(/*out vec3 LitColor, Object SceneObjects[], out HitResult HitResult, Light Scenelights*/)
-{
-    vec3 ReflectedColor; // initialized with lit color from previous stage
+                vec3 SurfaceHit_LitColor = GetLitColor(
+                    SceneLights,
+                    TotalSceneLights,
+                    SceneObjects,
+                    NewHitResult,
+                    NewRay_Direction,
+                    RenderSetting
+                );
+                    
+                    //For every new ray hit, use the ray instigator's specularity to mix new
+                    //color with Overall 'RootSurfaceHit' color. 
+                    //Since recursion isn't surpported in glsl, which we would have
+                    //used to follow the ray till it hits nothing in the scene; which will become
+                    //our surface color. Alternatively we're stacking up on the initial/root color
+                    //which every new suface hit because it would have been a part of the final color
+                    //anyways.
+                    InitialLitColor = mix(
+                        InitialLitColor, 
+                        SurfaceHit_LitColor, 
+                        clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
+                    );
+                
+                OldHitResult = NewHitResult;
+                OldRay_Position  = NewRay_Position;
+                OldRay_Direction = NewRay_Direction;
+            }
+            else 
+            {
+                //if no hit result(ray hits surrounding), no need to retrace with same old result in
+                //the next loop iteration since you'll always get the same hit result 
+                //till the max number of bounces is exhausted.
+                //So kindly exit here. or mix with surrounding color, then exit
 
-    //if(shading == diffuse_reflect || shading == diffuse_reflect_refract)
+                InitialLitColor = mix(
+                    InitialLitColor, 
+                    EnvironmentColor,//texture(CubemapTexture, NewRay_Direction).rgb,
+                    clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
+                  );
 
-    //pass in lit color and blend it with lit color from other reflective surface
-
-   //LitColor = ReflectedColor;
+                break;
+            }
+        }
+    }
+   
 }
 
 void Refract( /*out vec3 LitColor, Object SceneObjects[], out HitResult HitResult, Light Scenelights*/)
@@ -382,3 +463,14 @@ void Refract( /*out vec3 LitColor, Object SceneObjects[], out HitResult HitResul
     //LitColor = RefractedColor;
 }
 
+bool ObjectIsReflective(Object Obj, int ShadingType)
+{
+    return  (Obj.Reflectivity > 0.)
+         &&(ShadingType == SHADING_DIFFUSE_REFLECT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
+}
+
+bool ObjectIsRefractive(Object Obj, int ShadingType)
+{
+    return  Obj.IOR > 0.
+          &&(ShadingType == SHADING_DIFFUSE_REFRACT || ShadingType == SHADING_DIFFUSE_REFLECT_REFRACT );
+}

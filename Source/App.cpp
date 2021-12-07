@@ -128,40 +128,40 @@ int main()
     SceneDefaultObject.Scale    = 2;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object2
-    SceneDefaultObject.Position = glm::vec3(-5, 0, 2);
+    SceneDefaultObject.Position = glm::vec3(-8, 0, 2);
     SceneDefaultObject.Color    = glm::vec3(0.01, 1, 0.01);
     SceneDefaultObject.Scale    = 3;
+    SceneDefaultObject.Reflectivity = 0.75;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object3
     SceneDefaultObject.Position = glm::vec3(5, 0, 3);
     SceneDefaultObject.Color    = glm::vec3(0, 0, 1);
     SceneDefaultObject.Scale    = 2;
+    SceneDefaultObject.Reflectivity = -1;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
 
     //Scene lights
     std::vector<Light> SceneLights; SceneLights.reserve(3);
     Light SceneDefaultLight;
-    SceneDefaultLight.Attenuation_Linear    = 0.05f;
-    SceneDefaultLight.Attenuation_Quadratic = 0.005f;
+    SceneDefaultLight.Attenuation_Linear    = 0.0125f;
+    SceneDefaultLight.Attenuation_Quadratic = 0.f;
     
     SceneDefaultLight.Type = LIGHT_POINT;
     SceneDefaultLight.Color     = vec3(1);
-    SceneDefaultLight.Position  = vec3(0, -10, 0);
+    SceneDefaultLight.Position  = vec3(0, -25, 0);
     SceneDefaultLight.Intensity = 0.1f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
     SceneDefaultLight.Type = LIGHT_POINT;
-    SceneDefaultLight.Color     = vec3(1.f, 1.f, 0.1f);
-    SceneDefaultLight.Position  = vec3(0, 2, 0);
+    SceneDefaultLight.Color     = vec3(1.f);
+    SceneDefaultLight.Position  = vec3(0, 20, 0);
     SceneDefaultLight.Intensity = 0.85f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
     //Render settings
     RenderSettings RenderSetting;
-    RenderSetting.ShadingType = SHADING_DIFFUSE;  
-    RenderSetting.bAllowReflection = false;
-    RenderSetting.bAllowRefraction = false;
-    RenderSetting.MaximumReflectionBounces = 0;
+    RenderSetting.ShadingType = SHADING_DIFFUSE_REFLECT;  
+    RenderSetting.MaximumReflectionBounces = 1;
 
     //Send in data (Objects, Lights, Rendersettings)
     Shader_Geometry.Use();
@@ -222,6 +222,8 @@ int main()
         float CurrentTime = (float)glfwGetTime();
         DeltaTime = CurrentTime - LastTime;
         LastTime  = CurrentTime;
+
+        //std::cout << 1 / DeltaTime << "\n" ;
 
         glfwSwapBuffers(window);
         glfwPollEvents();
