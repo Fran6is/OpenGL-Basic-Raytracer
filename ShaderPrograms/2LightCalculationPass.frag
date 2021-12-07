@@ -1,5 +1,8 @@
 #version 330 core
 
+layout (location = 0) out vec4 GPosition;
+layout (location = 1) out vec4 GNormal;
+
 //common start
 uniform vec2  IResolution     = vec2(800.0, 600.0);
 uniform mat3  ICameraBasis    = mat3(1.0);
@@ -37,12 +40,12 @@ struct Object
 
 struct Light
 {
-    int Type;
-    vec3 Position;
-    vec3 Direction;
+    int   Type;
+    vec3  Position;
+    vec3  Direction;
     float Radius;
 
-    vec3 Color;
+    vec3  Color;
     float Intensity;
     float Attenuation_Linear;
     float Attenuation_Quadratic;
@@ -173,7 +176,7 @@ uniform   Object ISceneObjects[TOTAL_SCENE_OBJECTS];
 //Common End
 
 //Light section begin
-const vec3 EnvironmentColor = vec3(0.5, 0.1, 0.25);
+const vec3 EnvironmentColor = vec3(0.001);
 uniform   int    ITotalSceneLights  = 0;
 uniform   Light  ISceneLights[TOTAL_SCENE_LIGHTS];
 uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, 0);
@@ -228,6 +231,7 @@ void main()
     int PixelID  = int(texture(iGPosition, TexCoord).a);
     //
 
+    vec3 LitColor = vec3(0);
     if( WasAHitFromPixelID(PixelID) )
     {
         AHitResult HitResult;
@@ -236,7 +240,7 @@ void main()
         HitResult.ObjectIndex = PixelID;
 
         //Diffuse shading 
-        vec3 LitColor = GetLitColor(
+        LitColor = GetLitColor(
             ISceneLights,
             ITotalSceneLights,
             ISceneObjects,
@@ -266,12 +270,15 @@ void main()
 
         }
 
-        gl_FragColor = vec4(LitColor, 0.0);
+        //gl_FragColor = vec4(LitColor, 0.0);
     }
     else
     {
-        gl_FragColor = vec4(EnvironmentColor, 0.0);
+        LitColor = EnvironmentColor;
     }
+
+    GPosition.rgb = LitColor;
+    GPosition.a   = PixelID;
 }
 
 bool WasAHitFromPixelID(int PixelID)
@@ -301,12 +308,10 @@ vec3 GetLitColor(
 
 
     vec3 LitColor = vec3(0);
-    const vec3 MinimumColorValue = vec3(0.01);
 
     for(int i = 0; i < TotalSceneLights; i++)
     {
         Light CurrentLight = SceneLights[i];
-        CurrentLight.Color = max(CurrentLight.Color, MinimumColorValue);
 
         vec3 ToLightSource = vec3(0);
         
@@ -349,7 +354,7 @@ vec3 GetLitColor(
         float N_Dot_D             = dot(HitResult.HitNormal, ToLightSource);
         float DiffuseDistribution = max(N_Dot_D, 0.0) * CurrentLight.Intensity;
         
-        LitColor += max(SceneObjects[HitResult.ObjectIndex].Color, MinimumColorValue )  
+        LitColor += SceneObjects[HitResult.ObjectIndex].Color 
                   * clamp( SceneObjects[HitResult.ObjectIndex].Diffuseness, 0.0, 1.0) //clamp btw 0 and 1
                   * (CurrentLight.Color * DiffuseDistribution * Attenuation);
         

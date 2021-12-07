@@ -66,8 +66,8 @@ public:
 	
 	Camera* GetControlledCamera() { return MountedCamera; }
 
-	//if there's a camera, return it's basis else standard basis
-	glm::mat3 GetCameraBasis() const;
+	//if there's a camera, return it's orientation basis else standard basis
+	glm::mat3 GetCameraBasis3() const;
 
 	glm::vec3 GetCameraPosition() const;
 	float GetCameraFOV() const;

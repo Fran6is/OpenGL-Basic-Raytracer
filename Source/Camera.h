@@ -54,4 +54,7 @@ public:
     const glm::vec3& GetCameraZVector() const{ return ZVector; }
     const glm::vec3& GetCameraPosition() const{ return CameraPosition; }
 	FCameraDefinition& GetCameraSpecification() { return CameraDefinition; }
+
+	static float NearPlane;
+	static float FarPlane;
 };

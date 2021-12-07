@@ -38,6 +38,7 @@ bool Shader::LoadShaderFromFile(const std::string& ShaderFilePath, std::string& 
     if (!ShaderFile.is_open())
     {
         std::cout << "Unable to load shader file at path: " << ShaderFilePath << "\n";
+        assert(false);
         return false;
     }
     std::string temp{};

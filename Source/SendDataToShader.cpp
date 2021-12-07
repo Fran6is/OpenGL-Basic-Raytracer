@@ -6,9 +6,33 @@
 #pragma warning(disable : 4996) //suppress 'sprintf' warning or use 'sprintf_s'
 
 
+void SendRenderDataToShader_LightsPostProcess( const std::vector<Light>& SceneLights, const Shader& PostProcessShader )
+{
+    int i = 0;
+    for (const auto &SceneLight: SceneLights)
+    {
+        if(SceneLight.Type == LIGHT_DIRECTIONAL) continue;
+
+        char buffer[64]{};
+
+        sprintf(buffer, "ISceneLights[%i].Position", i);
+        PostProcessShader.SetVector3(buffer, SceneLight.Position );
+
+        sprintf(buffer, "ISceneLights[%i].Color", i);
+        PostProcessShader.SetVector3(buffer, SceneLight.Color );
+
+        sprintf(buffer, "ISceneLights[%i].Intensity", i);
+        PostProcessShader.SetFloat(buffer, SceneLight.Intensity );
+        i++;
+    }
+    PostProcessShader.SetInt("ITotalSceneLights", SceneLights.size());
+    
+}
+
 void SendRenderDataToShader( const ACameraController& CameraController, const Shader& ShaderProgram )
 {
-    ShaderProgram.SetMat3("ICameraBasis",       CameraController.GetCameraBasis());
+    ShaderProgram.Use();
+    ShaderProgram.SetMat3("ICameraBasis",       CameraController.GetCameraBasis3());
     ShaderProgram.SetVector3("ICameraPosition", CameraController.GetCameraPosition());
     ShaderProgram.SetFloat("ICameraFOV",        CameraController.GetCameraFOV());
 }
@@ -47,7 +71,7 @@ void SendRenderDataToShader( const std::vector<Light>& SceneLights, const Shader
 
         i++;
     }
-
+    
     ShaderProgram.SetInt("ITotalSceneLights", SceneLights.size());
     
 }

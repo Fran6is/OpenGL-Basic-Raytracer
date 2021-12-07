@@ -1,5 +1,10 @@
 #include "Camera.h"
 
+
+
+float Camera::NearPlane = 0.001f;
+float Camera::FarPlane  = 10000.f;
+
 Camera::Camera() : Camera(FCameraDefinition{ ECameraType::Perspective })
 {
 }

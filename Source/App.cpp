@@ -88,10 +88,19 @@ int main()
         GetFullPath("/ShaderPrograms/0VertexShader.vert"),
         GetFullPath("/ShaderPrograms/2LightCalculationPass.frag")
     );
+
+    Shader Shader_PostProcess(
+        GetFullPath("/ShaderPrograms/0VertexShader.vert"),
+        GetFullPath("/ShaderPrograms/3PostProcessPass.frag")
+    );
+
     ShaderProgramsWindowResize.emplace_back(&Shader_Geometry);
     ShaderProgramsWindowResize.emplace_back(&Shader_LightCalculation);
+    ShaderProgramsWindowResize.emplace_back(&Shader_PostProcess);
 
-    
+    FramebufferResizeCallback(window, SCR_WIDTH, SCR_HEIGHT);
+
+
     //Framebuffer setup
     FTexImage TexImage2dParams;
     TexImage2dParams.TargetTextureType = GL_TEXTURE_2D;
@@ -124,19 +133,26 @@ int main()
     Object SceneDefaultObject = {OBJECT_SPHERE};
         //object1
     SceneDefaultObject.Position = glm::vec3(0, 0, 3);
-    SceneDefaultObject.Color    = glm::vec3(1, 0, 0);
+    SceneDefaultObject.Color    = glm::vec3(0.5, 0.1, 0.1);
     SceneDefaultObject.Scale    = 2;
+    SceneDefaultObject.Specularity = 120;
+    SceneDefaultObject.Diffuseness = 0.5f;
+    SceneDefaultObject.Reflectivity = 0.25f;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object2
     SceneDefaultObject.Position = glm::vec3(-8, 0, 2);
     SceneDefaultObject.Color    = glm::vec3(0.01, 1, 0.01);
     SceneDefaultObject.Scale    = 3;
-    SceneDefaultObject.Reflectivity = 0.75;
+    SceneDefaultObject.Specularity = 200;
+    SceneDefaultObject.Diffuseness = 0.125f;
+    SceneDefaultObject.Reflectivity = 0.75f;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object3
     SceneDefaultObject.Position = glm::vec3(5, 0, 3);
     SceneDefaultObject.Color    = glm::vec3(0, 0, 1);
     SceneDefaultObject.Scale    = 2;
+    SceneDefaultObject.Specularity  = 200;
+    SceneDefaultObject.Diffuseness  = 0.05f;
     SceneDefaultObject.Reflectivity = -1;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
 
@@ -147,15 +163,15 @@ int main()
     SceneDefaultLight.Attenuation_Quadratic = 0.f;
     
     SceneDefaultLight.Type = LIGHT_POINT;
-    SceneDefaultLight.Color     = vec3(1);
-    SceneDefaultLight.Position  = vec3(0, -25, 0);
-    SceneDefaultLight.Intensity = 0.1f;
+    SceneDefaultLight.Color     = vec3(1, 0.0, 0.0);
+    SceneDefaultLight.Position  = vec3(0, 2 , 0);
+    SceneDefaultLight.Intensity = 10.f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
     SceneDefaultLight.Type = LIGHT_POINT;
-    SceneDefaultLight.Color     = vec3(1.f);
+    SceneDefaultLight.Color     = vec3(0.0, 0.0, 1.f);
     SceneDefaultLight.Position  = vec3(0, 20, 0);
-    SceneDefaultLight.Intensity = 0.85f;
+    SceneDefaultLight.Intensity = 20.f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
     //Render settings
@@ -178,6 +194,10 @@ int main()
     SendRenderDataToShader(RenderSetting,    Shader_LightCalculation);
     SendRenderDataToShader(CameraController, Shader_Geometry);
 
+    Shader_PostProcess.Use();
+    Shader_PostProcess.SetInt("iGPosition", 2);
+    SendRenderDataToShader(CameraController, Shader_PostProcess);
+    SendRenderDataToShader_LightsPostProcess(SceneLights, Shader_PostProcess);
     
     //Delta time
     float DeltaTime = 0;
@@ -202,10 +222,6 @@ int main()
 
             //(2) Light pass
             //----------------------------
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); 
-        glClearColor(0, 0.0f, 0.0f, 1.f); 
-        glClear(GL_COLOR_BUFFER_BIT );
-
         Texture::StaticBindTexture(GL_TEXTURE_2D, GPositionTex,  2);
         Texture::StaticBindTexture(GL_TEXTURE_2D, GNormalTex,    3);
         Shader_LightCalculation.Use();
@@ -214,8 +230,17 @@ int main()
         aQuadBuffer.BindVAO();
         glDrawElements(GL_TRIANGLES, aQuadBuffer.Get_EBO_Count(), GL_UNSIGNED_INT, 0);
 
-            //(3) Post-processing 
+            //(3) Post-processing
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); 
+        glClearColor(0, 0.0f, 0.0f, 1.f); 
+        glClear(GL_COLOR_BUFFER_BIT );
 
+        Texture::StaticBindTexture(GL_TEXTURE_2D, GPositionTex,  2);
+        Shader_PostProcess.Use();
+        SendRenderDataToShader(CameraController, Shader_PostProcess);
+
+        aQuadBuffer.BindVAO();
+        glDrawElements(GL_TRIANGLES, aQuadBuffer.Get_EBO_Count(), GL_UNSIGNED_INT, 0);
 
 
         //
@@ -236,13 +261,15 @@ int main()
 void AddObjectToScene(std::vector<Object>& SceneObjects, const Object& NewObject)
 {
     SceneObjects.emplace_back(NewObject);
-    SceneObjects.at(SceneObjects.size() - 1).ID = SceneObjects.size() - 1;
+    SceneObjects.at(SceneObjects.size() - 1).Color =  glm::max(NewObject.Color, vec3(0.01f));
+    SceneObjects.at(SceneObjects.size() - 1).ID    =  SceneObjects.size() - 1;
 }
 
 void AddLightToScene(std::vector<Light>& SceneLights, const Light& NewLight)
 {
     SceneLights.emplace_back(NewLight);
-    SceneLights.at(SceneLights.size() - 1).ID = SceneLights.size() - 1;
+    SceneLights.at(SceneLights.size() - 1).Color = glm::max(NewLight.Color, vec3(0.01f));
+    SceneLights.at(SceneLights.size() - 1).ID    = SceneLights.size() - 1;
 }
 
 void ProcessInput(GLFWwindow *window, float DeltaTime)
@@ -297,18 +324,7 @@ void FramebufferResizeCallback(GLFWwindow* window, int Width, int Height)
     SCR_WIDTH  = Width;
     SCR_HEIGHT = Height;
 
-    //Why doesn't my framebuffer texture attachments automatically scale with window resolution?
-    //https://stackoverflow.com/questions/23362497/how-can-i-resize-existing-texture-attachments-at-my-framebuffer
-    // if(GBufferPositionTextureAttachmentRef && GBufferNormalTextureAttachmentRef)
-    // {
-    //     glBindTexture(GL_TEXTURE_2D,  *GBufferPositionTextureAttachmentRef);
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL);
-
-    //     glBindTexture(GL_TEXTURE_2D,  *GBufferNormalTextureAttachmentRef);
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-
-    //     glBindTexture(GL_TEXTURE_2D, 0);
-    // }
+   
 
     Framebuffer::OnWindowResize(Width, Height);
 

@@ -2,7 +2,7 @@
 
 #include <GlmTransformsPrint.h>
 
-glm::mat3 ACameraController::GetCameraBasis() const
+glm::mat3 ACameraController::GetCameraBasis3() const
 {
     if(MountedCamera)  return glm::mat3(CameraXVector, CameraYVector, CameraZVector);
     
