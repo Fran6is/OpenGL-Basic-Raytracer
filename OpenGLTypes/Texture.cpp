@@ -48,12 +48,21 @@ void Texture::SetParameters(const FTextureParameters& Parameters)
 
 void Texture::StaticSetParameters(GLuint TextureID, GLint  TextureType, const FTextureParameters& Parameters)
 {
-    //Four opengl parameter settings for now
-    //Mappings [ 0 = GL_TEXTURE_WRAP_S, 1 = GL_TEXTURE_WRAP_T, 2 = GL_TEXTURE_MIN_FILTER, 3 = GL_TEXTURE_MAG_FILTER ]
-    
+    const int TotalParametersToSet = 5; 
+    //Five opengl texture parameter settings for now
+    /*
+    Mappings:
+    [ 
+        0 = GL_TEXTURE_WRAP_S, 
+        1 = GL_TEXTURE_WRAP_T, 
+        2 = GL_TEXTURE_WRAP_R, 
+        3 = GL_TEXTURE_MIN_FILTER, 
+        4 = GL_TEXTURE_MAG_FILTER 
+    ]
+    */
+
     glBindTexture(TextureType, TextureID);
 
-    const int TotalParametersToSet = 4; 
     std::pair<GLenum, GLint> KeyValuePair;
     for (int ParameterID = 0; ParameterID < TotalParametersToSet; ParameterID++)
     {
@@ -124,11 +133,16 @@ bool Texture::GetParameterAsKeyValuePair(int ParameterID, const FTextureParamete
         return Parameters.WrapT != ETextureWrapping::None;
 
     case 2: 
+        OUTKeyValuePair.first  = GL_TEXTURE_WRAP_R; 
+        OUTKeyValuePair.second = static_cast<GLint>(Parameters.WrapR);
+        return Parameters.WrapR != ETextureWrapping::None;
+
+    case 3: 
         OUTKeyValuePair.first  = GL_TEXTURE_MIN_FILTER; 
         OUTKeyValuePair.second = static_cast<GLint>(Parameters.DownSamplingFunction);
         return Parameters.DownSamplingFunction != ETextureResamplingFunction::None;
 
-    case 3: 
+    case 4: 
         OUTKeyValuePair.first  = GL_TEXTURE_MAG_FILTER; 
         OUTKeyValuePair.second = static_cast<GLint>(Parameters.UpSamplingFunction);
         return Parameters.UpSamplingFunction != ETextureResamplingFunction::None;

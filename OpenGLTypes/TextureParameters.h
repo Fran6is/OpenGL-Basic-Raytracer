@@ -7,7 +7,7 @@ struct FTexImage
 {
     GLint TargetTextureType = GL_TEXTURE_2D;
     GLint LOD = 0;
-    GLint InternalFormat = GL_RGBA8;
+    GLint InternalFormat = GL_RGB;
     int Width {512};
 	int Height{512};
     GLint Border = 0; //This value must be 0. https://docs.gl/gl3/glTexImage2D
@@ -53,8 +53,10 @@ enum class ETextureResamplingFunction: GLint
 struct FTextureParameters
 {
     ETextureType TextureType = ETextureType::Texture2D;
+
     ETextureWrapping WrapS  = ETextureWrapping::None;
     ETextureWrapping WrapT  = ETextureWrapping::None;
+    ETextureWrapping WrapR  = ETextureWrapping::None;
     
     ETextureResamplingFunction UpSamplingFunction   = ETextureResamplingFunction::Linear;
     ETextureResamplingFunction DownSamplingFunction = ETextureResamplingFunction::Linear;

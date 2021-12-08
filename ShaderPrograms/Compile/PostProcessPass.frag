@@ -12,8 +12,8 @@ uniform mat3  ICameraBasis    = mat3(1.0);
 uniform vec3  ICameraPosition = vec3(0.0);
 uniform float ICameraFOV      = 90;
 
-const int   TOTAL_SCENE_LIGHTS  = 5;
-uniform int ITotalSceneLights   = 0;
+const int     TOTAL_SCENE_LIGHTS  = 5;
+uniform int   ITotalSceneLights   = 0;
 uniform Light ISceneLights[TOTAL_SCENE_LIGHTS];
 
 uniform sampler2D iGPosition;
@@ -47,7 +47,7 @@ void main(void)
         //if light xy position is beyond -1 and +1. Basically no need to draw a circle not in view
         //in x or  y. Of which we can 'skip' drawing if light is beyond -+1.
         //but then again the light might just 'vanish' when it gets to the edge -+1
-        if(InCameraSpace.z <= 0 /*|| abs(InCameraSpace.x) > 1.0 || abs(InCameraSpace.y) > 1.0*/ ) continue;
+        if( InCameraSpace.z <= 0 /*|| abs(InCameraSpace.x) > 1.0 || abs(InCameraSpace.y) > 1.0*/ || ISceneLights[i].Intensity <= 0) continue;
 
         InCameraSpace.z = 1.0 / (InCameraSpace.z + 1.0); //will be our radius
         //BUG:

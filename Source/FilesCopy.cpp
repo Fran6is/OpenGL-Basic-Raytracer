@@ -6,25 +6,28 @@
 
 #define EXPECTED_TAG_INDEX_IN_STRING 0
 
-bool CopyPasteFileSection(const char* DestinationFilePath, 
-    const char* SourceFilePath, 
-    std::pair<const char*, const char*> SourceCopyTags, 
-    const char* DestinationPasteTag, 
+bool CopyPasteFileSection(
+    const std::string& DestinationFilePath,
+    const std::string& SourceFilePath, 
+    std::pair<std::string, std::string> SourceCopyTags, 
+    const std::string& DestinationPasteTag, 
     bool bTagDestFileWithUPDATEDwhenDone,
-    bool bRemovePasteTagFromDest) 
+    bool bRemovePasteTagFromDest
+    )
 {
-    if( !(DestinationFilePath && SourceFilePath && DestinationPasteTag && SourceCopyTags.first && SourceCopyTags.second) )
-    {
-        std::cerr << "LOG::CopyPasteFileSection()::One or more of function's 'const char*' argument is null. Exiting... \n";
-        return false;
-    }
-
 
     //Destination file
     std::fstream DestinationFile{ GetFullPath(DestinationFilePath) };
+
     if (!DestinationFile.is_open())
     {
-        std::cerr << "LOG::CopyPasteFileSection()::Unable to open or find destination file '" << DestinationFilePath << "'\n";
+        std::cerr << "LOG::CopyPasteFileSection()::Unable to open or find destination file '" 
+        << DestinationFilePath << "'. Creating a new file\n";
+
+        DestinationFile.open(GetFullPath(DestinationFilePath), std::ios::out);
+        DestinationFile << DestinationPasteTag;
+        DestinationFile.close();
+        DestinationFile.open( GetFullPath(DestinationFilePath) );
     }
 
     //Source file
@@ -32,10 +35,15 @@ bool CopyPasteFileSection(const char* DestinationFilePath,
     if (!SourceFile.is_open())
     {
         std::cerr << "LOG::CopyPasteFileSection()::Unable to open or find source file '" << SourceFilePath << "'\n";
+
+        DestinationFile.close();
+        SourceFile.close();
     }
 
     if( !DestinationFile.is_open() || !SourceFile.is_open() )
     {
+        DestinationFile.close();
+        SourceFile.close();
         return false;
     } 
 
@@ -53,7 +61,11 @@ bool CopyPasteFileSection(const char* DestinationFilePath,
     
     std::vector<std::string> DestinationFileContent;
     DestinationFileContent.reserve(50);
-    DestinationFileContent.emplace_back( bTagDestFileWithUPDATEDwhenDone ? "//DONT" : CurrentLine_Dest  );
+
+    if( CurrentLine_Dest.find(DestinationPasteTag) == std::string::npos )
+    {
+        DestinationFileContent.emplace_back( bTagDestFileWithUPDATEDwhenDone ? "//UPDATED" : CurrentLine_Dest  );
+    }
     
     bool bFoundFirstPasteTag = false;
     bool bAlreadyCopiedPasteContent = false;
@@ -63,7 +75,10 @@ bool CopyPasteFileSection(const char* DestinationFilePath,
 
     size_t PasteTagCount = 0;
     
-    DestinationFile.seekg(0, std::ios::beg);
+    
+    DestinationFile.seekg(0, std::ios::beg); //go back to the beginning of the file after you've determined the first line content not to be "//UPDATED" tag
+    
+
     while( std::getline( DestinationFile, CurrentLine_Dest) )
     {
         size_t FoundTagIndex = CurrentLine_Dest.find(DestinationPasteTag);
@@ -82,60 +97,85 @@ bool CopyPasteFileSection(const char* DestinationFilePath,
                 DestinationFileContent.emplace_back( CurrentLine_Dest );
             }
 
-            bool bFoundCopyStartTag = false;
-            bool bFoundCopyEndTag   = false;
+            bool bTheresAnOpenStartTag = false;
 
             std::string CurrentLine_Source;
+            std::vector<std::string>* TmpBuffer = nullptr; 
+
+            //we must be able to copy at least one full section enclosed within the copy tags
+            //for 'bAlreadyCopiedPasteContent' to be true
+            int SuccessfullCopies = 0; 
             while ( std::getline( SourceFile, CurrentLine_Source) )
             {      
-                FoundTagIndex = CurrentLine_Source.find(SourceCopyTags.first);
-
-                if( !bFoundCopyStartTag && (FoundTagIndex == EXPECTED_TAG_INDEX_IN_STRING)   )
+                bool bJustFoundAStartTag = CurrentLine_Source.find(SourceCopyTags.first)  == EXPECTED_TAG_INDEX_IN_STRING;
+                bool bJustFoundAnEndTag  = CurrentLine_Source.find(SourceCopyTags.second) == EXPECTED_TAG_INDEX_IN_STRING;
+                
+                if( !bTheresAnOpenStartTag && bJustFoundAStartTag  )
                 {
                     std::cout << "Found copy start tag '" << SourceCopyTags.first << "' in source file '" 
                             << SourceFilePath << "' pos = " << CurrentLine_Source.find(SourceCopyTags.first) << "\n";;
 
-                    bFoundCopyStartTag = true;
-                    Index_PasteContent_Start = DestinationFileContent.size();
-                    continue;
+                    bTheresAnOpenStartTag = true;
+                    TmpBuffer = new std::vector<std::string>();
+
+                    continue; //don't include the tag 
                 }
 
-                if (bFoundCopyStartTag)
+                if (bTheresAnOpenStartTag)
                 {
-                    FoundTagIndex = CurrentLine_Source.find(SourceCopyTags.second);
-                    if( FoundTagIndex == EXPECTED_TAG_INDEX_IN_STRING )
+                    Index_PasteContent_Start = Index_PasteContent_Start < 0 ? DestinationFileContent.size() - 1 : Index_PasteContent_Start;
+
+                    //If we found another start tag while the last one hasn't been closed by an end tag
+                    //delete the temporary content we were collecting
+                    if( bJustFoundAStartTag ) 
+                    {
+                        delete TmpBuffer;
+                        TmpBuffer = new std::vector<std::string>();
+                    }
+                    else if( bJustFoundAnEndTag ) //empty the temporary buffer's content into destination file buffer
                     {
                         std::cout << "Found copy end tag '" << SourceCopyTags.second << "' in source file '" 
-                            << SourceFilePath << "' \t" << "pos = " << CurrentLine_Source.find(SourceCopyTags.second) << "\n";
+                            << SourceFilePath << "' pos = " << CurrentLine_Source.find(SourceCopyTags.second) << "\n";;
 
-                        bFoundCopyEndTag = true;
+
+                        for (const auto &Content : *TmpBuffer)
+                        {
+                            DestinationFileContent.emplace_back(Content);
+                        }
+
                         Index_PasteContent_End = DestinationFileContent.size();
-                        break;
-                    }
 
-                    //std::cout << CurrentLine_Source << "\n";
-                    DestinationFileContent.emplace_back(CurrentLine_Source);
+                        delete TmpBuffer;
+                        TmpBuffer = nullptr;
+
+                        bTheresAnOpenStartTag = false;
+                        SuccessfullCopies += 1;
+                    }
+                    else //temporary store file content until a potential end tag is encountered!
+                    {
+                        TmpBuffer->emplace_back(CurrentLine_Source);
+                    }  
                 }
             }
+            delete TmpBuffer; //delete buffer content, if any
 
-            //if we found both tags (copy and end), then we successfully copied that section of the source file
-            //if not, either one or both tags don't exist. So there's no point copying the remaining content from 
-            //destination
-
-            if(bFoundCopyStartTag && bFoundCopyEndTag)
+            if(SuccessfullCopies > 0)
             {
-                std::cout << "Found both copy tags. Continuing with rest of file \n";
                 bAlreadyCopiedPasteContent = true;
                 continue;
             }
             else
             {
+                std::cout << "No start copy tag found in file! \n";
+
                 DestinationFile.close();
                 SourceFile.close();
-                std::cerr << "LOG::CopyPasteFileSection:: source copy start tag '"<< SourceCopyTags.first << "' "
-                     << "and / or end tag '" << SourceCopyTags.second  <<"' doesn't exist in '" << SourceFilePath << "'. Aborting operation. Destination file is unchanged \n";
+
                 return false;
             }
+            
+            std::cout << "Successful copies count = " << SuccessfullCopies   << "\n";
+            std::cout << "Any unclosed start tag? = " << bTheresAnOpenStartTag << "\n";
             
         }
         else if( (FoundTagIndex == EXPECTED_TAG_INDEX_IN_STRING) && bAlreadyCopiedPasteContent )

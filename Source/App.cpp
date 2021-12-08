@@ -7,13 +7,14 @@
 #include "GlmTransformsPrint.h"
 
 #include <Shader.h>
-#include <Texture.h>
+#include <Cubemap.h>
+#include <ImageLoader.h>
 #include <Buffer.h>
 
 #include <Path.h>
 #include <RaytracingSceneStructs.h>
 #include "CameraController.h"
-// #include <FilesCopy.h>
+#include <FilesCopy.h>
 #include <SendDataToShader.h>
 #include <Framebuffer.h>
 #include <array>
@@ -40,7 +41,71 @@ std::vector< const Shader* > ShaderProgramsWindowResize;        //Accessed by fu
 
 int main()
 {
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Geometry.frag", 
+        "/ShaderPrograms/Source/Geometry_main.frag", 
+        {"//WHOLE_START", "//WHOLE_END"}, 
+        "//PASTE",
+        false
+    );
 
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Geometry.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//COMMON_HEADER_START", "//COMMON_HEADER_END"}, 
+        "//COMMON_HEADER",
+        false
+    );
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Geometry.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//COMMON_DEF_START", "//COMMON_DEF_END"}, 
+        "//COMMON_DEF"
+    );
+
+    //LIGHT
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Light.frag", 
+        "/ShaderPrograms/Source/Light_main.frag", 
+        {"//WHOLE_START", "//WHOLE_END"}, 
+        "//PASTE",
+        false
+    );
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Light.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//COMMON_HEADER_START", "//COMMON_HEADER_END"}, 
+        "//COMMON_HEADER",
+        false
+    );
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Light.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//LIGHT_HEADER_START", "//LIGHT_HEADER_END"}, 
+        "//LIGHT_HEADER",
+        false
+    );
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Light.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//COMMON_DEF_START", "//COMMON_DEF_END"}, 
+        "//COMMON_DEF",
+        false
+    );
+
+    CopyPasteFileSection(
+        "/ShaderPrograms/Compile/Light.frag", 
+        "/ShaderPrograms/Source/Common.frag", 
+        {"//LIGHT_DEF_START", "//LIGHT_DEF_END"}, 
+        "//LIGHT_DEF"
+    );
+
+    return 0;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -91,7 +156,7 @@ int main()
 
     Shader Shader_PostProcess(
         GetFullPath("/ShaderPrograms/0VertexShader.vert"),
-        GetFullPath("/ShaderPrograms/3PostProcessPass.frag")
+        GetFullPath("/ShaderPrograms/Compile/PostProcessPass.frag")
     );
 
     ShaderProgramsWindowResize.emplace_back(&Shader_Geometry);
@@ -133,11 +198,11 @@ int main()
     Object SceneDefaultObject = {OBJECT_SPHERE};
         //object1
     SceneDefaultObject.Position = glm::vec3(0, -2, 3);
-    SceneDefaultObject.Color    = glm::vec3(0.5, 0.1, 0.1);
+    SceneDefaultObject.Color    = glm::vec3(0.5, 0.5, 0.5);
     SceneDefaultObject.Scale    = 2;
-    SceneDefaultObject.Specularity = 120;
-    SceneDefaultObject.Diffuseness = 0.5f;
-    SceneDefaultObject.Reflectivity = 0.25f;
+    SceneDefaultObject.Specularity = 200;
+    SceneDefaultObject.Diffuseness = 0.125f;
+    SceneDefaultObject.Reflectivity = 0.75f;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object2
     SceneDefaultObject.Position = glm::vec3(-8, 0, 2);
@@ -145,39 +210,44 @@ int main()
     SceneDefaultObject.Scale    = 3;
     SceneDefaultObject.Specularity = 200;
     SceneDefaultObject.Diffuseness = 0.125f;
-    SceneDefaultObject.Reflectivity = 0.75f;
+    SceneDefaultObject.Reflectivity = 0.f;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
         //object3
     SceneDefaultObject.Position = glm::vec3(5, 0, 3);
-    SceneDefaultObject.Color    = glm::vec3(0, 0, 1);
+    SceneDefaultObject.Color    = glm::vec3(0.1, 0.1, 0.1);
     SceneDefaultObject.Scale    = 2;
     SceneDefaultObject.Specularity  = 200;
     SceneDefaultObject.Diffuseness  = 0.05f;
-    SceneDefaultObject.Reflectivity = -1;
+    SceneDefaultObject.Reflectivity = 0.f;
     AddObjectToScene(SceneObjects, SceneDefaultObject);
 
     //Scene lights
     std::vector<Light> SceneLights; SceneLights.reserve(3);
     Light SceneDefaultLight;
+    
+    SceneDefaultLight.Type = LIGHT_DIRECTIONAL;
+    SceneDefaultLight.Color     = vec3(0.9, 0.9, 0.8);
+    SceneDefaultLight.Ambient   = SceneDefaultLight.Color * 0.01f; //vec3(0.01f);
+    SceneDefaultLight.Direction  = vec3(50, -2, 0);
+    SceneDefaultLight.Intensity = 1.f;
     SceneDefaultLight.Attenuation_Linear    = 0.0125f;
     SceneDefaultLight.Attenuation_Quadratic = 0.f;
+    AddLightToScene(SceneLights, SceneDefaultLight);
     
     SceneDefaultLight.Type = LIGHT_POINT;
-    SceneDefaultLight.Color     = vec3(1, 0.0, 0.0);
-    SceneDefaultLight.Position  = vec3(10, 2 , 0);
+    SceneDefaultLight.Color     = vec3(0, 1.0, 0.0);
+    SceneDefaultLight.Ambient   = SceneDefaultLight.Color * 0.01f; //vec3(0.01f);
+    SceneDefaultLight.Position  = vec3(-5, 10 , 2);
     SceneDefaultLight.Intensity = 10.f;
+    SceneDefaultLight.Attenuation_Linear    = 0.125f;
+    SceneDefaultLight.Attenuation_Quadratic = 0.00625f;
     AddLightToScene(SceneLights, SceneDefaultLight);
 
-    SceneDefaultLight.Type = LIGHT_POINT;
-    SceneDefaultLight.Color     = vec3(0.0, 0.0, 1.f);
-    SceneDefaultLight.Position  = vec3(0, 20, 0);
-    SceneDefaultLight.Intensity = 20.f;
-    AddLightToScene(SceneLights, SceneDefaultLight);
 
     //Render settings
     RenderSettings RenderSetting;
     RenderSetting.ShadingType = SHADING_DIFFUSE;  
-    RenderSetting.MaximumReflectionBounces = 0;
+    RenderSetting.MaximumReflectionBounces = 5;
 
     //Send in data (Objects, Lights, Rendersettings)
     Shader_Geometry.Use();
@@ -198,6 +268,21 @@ int main()
     Shader_PostProcess.SetInt("iGPosition", 2);
     SendRenderDataToShader(CameraController, Shader_PostProcess);
     SendRenderDataToShader_LightsPostProcess(SceneLights, Shader_PostProcess);
+
+    //Cubemap
+    std::array<std::string, 6> CubemapFaces
+    {
+        GetFullPath("/Textures/Skybox/right.jpg"),
+        GetFullPath("/Textures/Skybox/left.jpg"),
+        GetFullPath("/Textures/Skybox/top.jpg"),
+        GetFullPath("/Textures/Skybox/bottom.jpg"),
+        GetFullPath("/Textures/Skybox/front.jpg"),
+        GetFullPath("/Textures/Skybox/back.jpg")
+    };
+
+    Cubemap Skybox(CubemapFaces, false);
+    Shader_LightCalculation.Use();
+    Shader_LightCalculation.SetInt("iCubemap", 0);
 
     //Delta time
     float DeltaTime = 0;
@@ -224,6 +309,7 @@ int main()
             //----------------------------
         Texture::StaticBindTexture(GL_TEXTURE_2D, GPositionTex,  2);
         Texture::StaticBindTexture(GL_TEXTURE_2D, GNormalTex,    3);
+        Skybox.Bind(0);
         Shader_LightCalculation.Use();
         SendRenderDataToShader(CameraController, Shader_LightCalculation);
 
@@ -261,15 +347,16 @@ int main()
 void AddObjectToScene(std::vector<Object>& SceneObjects, const Object& NewObject)
 {
     SceneObjects.emplace_back(NewObject);
-    SceneObjects.at(SceneObjects.size() - 1).Color =  glm::max(NewObject.Color, vec3(0.01f));
+    SceneObjects.at(SceneObjects.size() - 1).Color =  glm::max(NewObject.Color, vec3(0.0095f));
     SceneObjects.at(SceneObjects.size() - 1).ID    =  SceneObjects.size() - 1;
 }
 
 void AddLightToScene(std::vector<Light>& SceneLights, const Light& NewLight)
 {
     SceneLights.emplace_back(NewLight);
-    SceneLights.at(SceneLights.size() - 1).Color = glm::max(NewLight.Color, vec3(0.01f));
-    SceneLights.at(SceneLights.size() - 1).ID    = SceneLights.size() - 1;
+    SceneLights.at(SceneLights.size() - 1).Color   = glm::max(NewLight.Color,   vec3(0.0095f));
+    SceneLights.at(SceneLights.size() - 1).Ambient = glm::max(NewLight.Ambient, vec3(0.0095f));
+    SceneLights.at(SceneLights.size() - 1).ID      = SceneLights.size() - 1;
 }
 
 void ProcessInput(GLFWwindow *window, float DeltaTime)

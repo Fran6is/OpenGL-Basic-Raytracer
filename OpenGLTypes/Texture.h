@@ -4,14 +4,6 @@
 #include "TextureParameters.h"
 #include <iostream>
 
-
-
-struct FImageLoader
-{
-    static FTexImage LoadImage(const std::string& ImagePath, unsigned char** PtrToData_OPTIONAL = nullptr);
-    static void FreeImage(unsigned char* Data);
-};
-
 class Texture
 {
 private:

@@ -1,6 +1,8 @@
-#version 330
+//UPDATED
 
-//COMMON_START(Geometry and Light)
+
+
+
 layout (location = 0) out vec4 GPosition;
 layout (location = 1) out vec4 GNormal;
 
@@ -39,9 +41,7 @@ AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObject
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection);
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection);
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection); 
-//COMMON_END(Geometry and Light)
 
-//LIGHT_START
 #define LIGHT_DIRECTIONAL 1000
 #define LIGHT_POINT       2000
 
@@ -106,7 +106,6 @@ void Reflect(
 );
 
 float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection);
-//LIGHT_END
 
 void main()
 {
@@ -175,7 +174,6 @@ void main()
     GPosition.a   = PixelID;
 }
 
-//COMMON_START(Geometry and Light)
 AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection)
 {
     AHitResult FinalHitResult;
@@ -276,10 +274,7 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	return HitResult;
 }
-//COMMON_END(Geometry and Light)
 
-
-//LIGHT_START
 bool WasAHitFromPixelID(int PixelID)
 {
     return !(PixelID == NO_HIT_ID);
@@ -491,4 +486,4 @@ float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, v
     
     return 1000000;
 }
-//LIGHT_END
+

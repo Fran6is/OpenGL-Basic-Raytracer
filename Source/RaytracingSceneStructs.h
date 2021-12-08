@@ -31,6 +31,7 @@ struct Light
     float Radius = 2;
 
     vec3  Color     = vec3(0);
+    vec3 Ambient    = vec3(0.1f);
     float Intensity = 100;
     float Attenuation_Linear    = 1.f;;
     float Attenuation_Quadratic = 1.0f;

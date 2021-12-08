@@ -54,6 +54,9 @@ void SendRenderDataToShader( const std::vector<Light>& SceneLights, const Shader
         sprintf(buffer, "ISceneLights[%i].Color", i);
         ShaderProgram.SetVector3(buffer, SceneLight.Color );
 
+        sprintf(buffer, "ISceneLights[%i].Ambient", i);
+        ShaderProgram.SetVector3(buffer, SceneLight.Ambient );
+
         sprintf(buffer, "ISceneLights[%i].Direction", i);
         ShaderProgram.SetVector3(buffer, SceneLight.Direction );
 
@@ -75,8 +78,7 @@ void SendRenderDataToShader( const std::vector<Light>& SceneLights, const Shader
         i++;
     }
     
-    ShaderProgram.SetInt("ITotalSceneLights", SceneLights.size());
-    
+    ShaderProgram.SetInt("ITotalSceneLights", SceneLights.size());    
 }
 
 void SendRenderDataToShader(const RenderSettings& RenderSetting, const Shader& ShaderProgram )
@@ -84,10 +86,6 @@ void SendRenderDataToShader(const RenderSettings& RenderSetting, const Shader& S
     ShaderProgram.Use();
 
     ShaderProgram.SetInt("IRenderSetting.ShadingType", RenderSetting.ShadingType );
-
-    // ShaderProgram.SetBool("IRenderSetting.bAllowReflection", RenderSetting.bAllowReflection );
-
-    // ShaderProgram.SetBool("IRenderSetting.bAllowRefraction", RenderSetting.bAllowRefraction );
 
     ShaderProgram.SetInt("IRenderSetting.MaximumReflectionBounces", RenderSetting.MaximumReflectionBounces );
     

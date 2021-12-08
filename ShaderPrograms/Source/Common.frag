@@ -1,6 +1,5 @@
-#version 330
 
-//COMMON_START(Geometry and Light)
+//COMMON_HEADER_START
 layout (location = 0) out vec4 GPosition;
 layout (location = 1) out vec4 GNormal;
 
@@ -39,9 +38,9 @@ AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObject
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection);
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection);
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection); 
-//COMMON_END(Geometry and Light)
+//COMMON_HEADER_END
 
-//LIGHT_START
+//LIGHT_HEADER_START
 #define LIGHT_DIRECTIONAL 1000
 #define LIGHT_POINT       2000
 
@@ -106,76 +105,10 @@ void Reflect(
 );
 
 float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection);
-//LIGHT_END
+//LIGHT_HEADER_END
 
-void main()
-{
-    //Ray Construction from fragment co-ordinate
-    vec2 UV = (gl_FragCoord.xy/IResolution) * 2.0 - vec2(1.0);
 
-    vec3 RayOrigin    = ICameraPosition;
-	vec3 RayDirection = vec3(UV, 1.0);
-    RayDirection.x *= tan(radians(ICameraFOV/2.0)) * IResolution.x / IResolution.y;
-    RayDirection.y *= tan(radians(ICameraFOV/2.0));
-    RayDirection    = normalize( ICameraBasis * RayDirection );
-    //
-
-    //Get object index in alpha channel and convert to an int
-    int PixelID  = int(texture(iGPosition, TexCoord).a);
-    //
-
-    vec3 LitColor = vec3(0);
-    if( WasAHitFromPixelID(PixelID) )
-    {
-        AHitResult HitResult;
-        HitResult.HitLocation = texture(iGPosition, TexCoord).rgb;
-        HitResult.HitNormal   = normalize( texture(iGNormal, TexCoord).rgb );
-        HitResult.ObjectIndex = PixelID;
-
-        //Diffuse shading 
-        LitColor = GetLitColor(
-            ISceneLights,
-            ITotalSceneLights,
-            ISceneObjects,
-            ITotalSceneObjects,
-            HitResult,
-            RayDirection,
-            IRenderSetting
-        );
-
-        //check if object is reflective ( r > 0) and or refractive (IOR > 0). The default  is -1
-        if( (ISceneObjects[HitResult.ObjectIndex].Reflectivity > 0.) && (IRenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT) )
-        {
-            Reflect(
-                ISceneObjects, 
-                ITotalSceneObjects, 
-                ISceneLights,
-                ITotalSceneLights,
-                IRenderSetting,
-                LitColor,
-                HitResult,
-                RayDirection,
-                RayOrigin
-            );
-
-        }
-        else if( (ISceneObjects[HitResult.ObjectIndex].IOR > 0.) && (IRenderSetting.ShadingType == SHADING_DIFFUSE_REFRACT)  )
-        {
-
-        }
-    }
-    else 
-    {
-
-        LitColor = texture(iCubemap, RayDirection).rgb;
-
-    }
-
-    GPosition.rgb = LitColor;
-    GPosition.a   = PixelID;
-}
-
-//COMMON_START(Geometry and Light)
+//COMMON_DEF_START
 AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection)
 {
     AHitResult FinalHitResult;
@@ -276,10 +209,9 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	return HitResult;
 }
-//COMMON_END(Geometry and Light)
+//COMMON_DEF_END
 
-
-//LIGHT_START
+//LIGHT_DEF_START
 bool WasAHitFromPixelID(int PixelID)
 {
     return !(PixelID == NO_HIT_ID);
@@ -491,4 +423,4 @@ float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, v
     
     return 1000000;
 }
-//LIGHT_END
+//LIGHT_DEF_END
