@@ -20,6 +20,8 @@ add_executable(Raytracing
             Source/Path.cpp
             Source/FilesCopy.h
             Source/FilesCopy.cpp
+            Source/CombineShaderModules.h
+            Source/CombineShaderModules.cpp
             Source/RaytracingSceneStructs.h
             OpenGLTypes/Buffer.h
             OpenGLTypes/Buffer.cpp

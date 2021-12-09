@@ -8,9 +8,10 @@
 - **Render passes:** Geometry, Lighting, and Post processing
 - **Post processing:** HDR mapping, Gamma correction
 - **Traced Shapes:** Spheres and Planes
-- **Lights:** Directional and point
+- **Lights:** Directional and point (W shadow casts )
 - Framebuffer with two texture atachments for Render passes
 - Cubemap
+- Shadows ( *directional and point lights* )
 
 <hr>
 
@@ -33,15 +34,17 @@
 
 ***Math library***: GLM
 
+- ***
+
 <hr>
 
-![img](https://res.cloudinary.com/asuelimf/image/upload/v1638944427/ProjectScreenshots/raytracing1_puiycd.png)
+![img](https://res.cloudinary.com/asuelimf/image/upload/v1639091954/ProjectScreenshots/Raytracing1_zrvzmm.png)
 
+![img](https://res.cloudinary.com/asuelimf/image/upload/v1638944428/ProjectScreenshots/raytracing3_uk8zy7.png)
 
 ![img](https://res.cloudinary.com/asuelimf/image/upload/v1638944428/ProjectScreenshots/raytracing2_ul8mf4.png)
 
 
-![img](https://res.cloudinary.com/asuelimf/image/upload/v1638944428/ProjectScreenshots/raytracing3_uk8zy7.png)
 
 
 

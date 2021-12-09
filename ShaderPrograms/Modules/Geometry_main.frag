@@ -1,6 +1,6 @@
-//WHOLE_START
+WHOLE_START
 
-//COMMON_HEADER
+COMMON_H
 
 void main()
 {
@@ -40,6 +40,6 @@ void main()
     }
 }
 
-//COMMON_DEF
+COMMON_IMP
 
-//WHOLE_END
+WHOLE_END

@@ -1,5 +1,10 @@
+//UPDATED
 
-//COMMON_HEADER_START
+
+
+
+#version 330 core
+
 layout (location = 0) out vec4 GPosition;
 layout (location = 1) out vec4 GNormal;
 
@@ -8,7 +13,12 @@ uniform mat3  ICameraBasis    = mat3(1.0);
 uniform vec3  ICameraPosition = vec3(0.0);
 uniform float ICameraFOV      = 90;
 
-struct AHitResult { bool bWasAHit; vec3 HitLocation; vec3 HitNormal; int ObjectIndex; float Distance; };
+uniform sampler2D   iGPosition;
+uniform sampler2D   iGNormal;
+
+struct AHitResult { bool bWasAHit; vec3 HitLocation; vec3 HitNormal; int ObjectIndex; float Distance;  };
+
+const float TinyOffset = 0.01; //keep this distance from an already hit surface if tracing another ray from there. Used by shadow and plane-ray ray cast
 
 #define OBJECT_PLANE  12
 #define OBJECT_SPHERE 100
@@ -19,6 +29,7 @@ struct Object
     int   ID;
     vec3  Position;
     float Scale;
+    mat3  Basis; 
 
     vec3  Color;
     float Diffuseness;
@@ -36,10 +47,8 @@ uniform   Object ISceneObjects[TOTAL_SCENE_OBJECTS];
 AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection);
 AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection);
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection);
-AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection); 
-//COMMON_HEADER_END
+AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirection);
 
-//LIGHT_HEADER_START
 #define LIGHT_DIRECTIONAL 1000
 #define LIGHT_POINT       2000
 
@@ -48,7 +57,6 @@ struct Light
     int   Type;
     vec3  Position;
     vec3  Direction;
-    float Radius;
 
     vec3  Color;
     vec3  Ambient;
@@ -66,15 +74,15 @@ struct RenderSettings
 {
     int  ShadingType;
     int  MaximumReflectionBounces;
+    bool bUseSkyBox;
 };
 
 uniform   int    ITotalSceneLights  = 0;
 uniform   Light  ISceneLights[TOTAL_SCENE_LIGHTS];
-uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, 0);
+uniform   RenderSettings IRenderSetting = RenderSettings(SHADING_DIFFUSE, 0, false);
 
-uniform sampler2D   iGPosition;
-uniform sampler2D   iGNormal;
 uniform samplerCube iCubemap;
+vec3    EnvironmentColor = vec3(0.01);  //If no skybox
 
 in vec2 TexCoord;
 
@@ -101,19 +109,82 @@ void Reflect(
     out vec3 OldRay_Direction,
     out vec3 OldRay_Position
 );
-
+#define SHADOW_TRACE_NO_HIT 10000000
 float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection);
-//LIGHT_HEADER_END
 
+void main()
+{
+    //Ray Construction from fragment co-ordinate
+    vec2 UV = (gl_FragCoord.xy/IResolution) * 2.0 - vec2(1.0);
 
-//COMMON_DEF_START
+    vec3 RayOrigin    = ICameraPosition;
+	vec3 RayDirection = vec3(UV, 1.0);
+    RayDirection.x *= tan(radians(ICameraFOV/2.0)) * IResolution.x / IResolution.y;
+    RayDirection.y *= tan(radians(ICameraFOV/2.0));
+    RayDirection    = normalize( ICameraBasis * RayDirection );
+    //
+
+    //Get object index in alpha channel and convert to an int
+    int PixelID  = int(texture(iGPosition, TexCoord).a);
+    //
+
+    //TODO:
+    //Image based lighting with cube maps
+
+    vec3 LitColor = vec3(0);
+    if( WasAHitFromPixelID(PixelID) )
+    {
+        AHitResult HitResult;
+        HitResult.HitLocation = texture(iGPosition, TexCoord).rgb;
+        HitResult.HitNormal   = normalize( texture(iGNormal, TexCoord).rgb );
+        HitResult.ObjectIndex = PixelID;
+
+        //Diffuse shading 
+        LitColor = GetLitColor(
+            ISceneLights,
+            ITotalSceneLights,
+            ISceneObjects,
+            ITotalSceneObjects,
+            HitResult,
+            RayDirection,
+            IRenderSetting
+        );
+
+        //check if object is reflective ( r > 0) and or refractive (IOR > 0). The default  is -1
+        if( (ISceneObjects[HitResult.ObjectIndex].Reflectivity > 0.) && (IRenderSetting.ShadingType == SHADING_DIFFUSE_REFLECT) )
+        {
+            Reflect(
+                ISceneObjects, 
+                ITotalSceneObjects, 
+                ISceneLights,
+                ITotalSceneLights,
+                IRenderSetting,
+                LitColor,
+                HitResult,
+                RayDirection,
+                RayOrigin
+            );
+
+        }
+    }
+    else 
+    {
+
+        LitColor = IRenderSetting.bUseSkyBox ? texture(iCubemap, RayDirection).rgb : EnvironmentColor;
+
+    }
+
+    GPosition.rgb =  LitColor;
+    GPosition.a   = PixelID;
+}
+
 AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection)
 {
     AHitResult FinalHitResult;
     FinalHitResult.bWasAHit = false;
     
-    float Closest_Distance = -1.0;
-    bool  bFirstTimeCheck = true;
+    float Closest_Distance = -1;
+    bool  bFirstTimeCheck  = true;
 
     int Closest_Index = 0;
 
@@ -155,17 +226,48 @@ AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObject
 
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection)
 {
-    float DistanceToPlane = -1.0;
-
+    //Plane line intersection equation
+    //Review at https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+    
 	AHitResult Result;
 	Result.bWasAHit = false;
-    const float CLIP_DISTANCE = 1.0;
+    vec3 PlaneNormal = Plane.Basis[1];
 
-	if(DistanceToPlane >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
-    {
+    // assuming vectors are all normalized
+    float Denominator = dot( PlaneNormal, RayDirection); 
 
-    }
+    //if the dot product btw the plane normal and ray direction is equal to zero, then the ray won't intercept the plane
+    //because they are perpendicular. Or some value close to zero due to floating point precision
 
+    if( abs(Denominator) > 0.00006 ) 
+    { 
+        vec3 RayToPlane = Plane.Position - RayPosition;
+
+        float T = dot(RayToPlane, PlaneNormal) / Denominator;
+
+        //if 'RayToPlane' dot 'PlaneNormal' = 0, then the ray is exactly on the plane
+        //this might affect reflection traces since they start exactly on the plane
+        //Solution is to add a small offset in the direction of the ray's normal when sending final hit location
+
+        if(T >= 0.)
+        {
+            vec3 SupposedPointOnPlane = RayPosition + RayDirection * T;
+
+            vec3 DistanceToPlane =  abs( transpose(Plane.Basis) * (SupposedPointOnPlane - Plane.Position) ) - vec3(Plane.Scale);            
+            
+            DistanceToPlane = max(DistanceToPlane, vec3(0.0));
+
+            if( length(DistanceToPlane) <= TinyOffset )
+            {
+                Result.bWasAHit    = true;
+                Result.HitLocation = SupposedPointOnPlane + PlaneNormal * TinyOffset;
+                Result.HitNormal   = PlaneNormal;
+                Result.Distance    = T;
+            }
+
+        }
+    } 
+     
     return Result;
 }
 
@@ -177,23 +279,26 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	AHitResult HitResult;
 	HitResult.bWasAHit = false;
-    const float CLIP_DISTANCE = 0.001;
 
-	if(DistanceToSphere >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
+	if(DistanceToSphere >= 1.0 ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
 	{
 		float Y = length( (RayPosition + RayDirection * DistanceToSphere) - Sphere.Position );
 
 		if(Y <= Sphere.Scale) //Distance to ray projection end point must be inside the sphere 
 		{
-			float X = Sphere.Scale * Sphere.Scale - Y * Y; //this will evaluate to a negative value if we're inside the sphere
-            if(X < 0.0) return HitResult; 
+			float X = sqrt( Sphere.Scale * Sphere.Scale - Y * Y ); 
 
-            X = sqrt(X);
+            //T1 will be negative if ray is inside the sphere because then X will be greater than 'DistanceToSphere'
+            //T2 at this point will be outside the sphere rather than on it (on the exit side) because 
+            //we'll be adding to 'DistanceToSphere'
 
-            float T1 = DistanceToSphere - X; //first point of ray intersection with the sphere
-            float T2 = DistanceToSphere + X; //second point of intersection/ray exit point
+            //If ray position is exactly on the surface, then T1 will equal 0 ; and T2 is the distance to the exit location (as usual)
+            //T1 = T2 when there's only one entry and exit
 
-			HitResult.bWasAHit     = true;
+            float T1 = DistanceToSphere - X; //Entry
+            float T2 = DistanceToSphere + X; //Exit
+
+			HitResult.bWasAHit    = true;
 			HitResult.HitLocation = RayPosition + RayDirection * T1;
 			HitResult.HitNormal   = normalize( HitResult.HitLocation - Sphere.Position );
 			HitResult.Distance    = T1;
@@ -207,9 +312,8 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	return HitResult;
 }
-//COMMON_DEF_END
 
-//LIGHT_DEF_START
+
 bool WasAHitFromPixelID(int PixelID)
 {
     return !(PixelID == NO_HIT_ID);
@@ -225,6 +329,7 @@ vec3 GetLitColor(
     RenderSettings RenderSetting
     )
 {
+
     //if surface is a 100 percent reflective, then there's no point calculating it's diffuse color
     //since it will just blend a 100 percent to it's environment
     if( 
@@ -233,7 +338,7 @@ vec3 GetLitColor(
         &&(SceneObjects[HitResult.ObjectIndex].Reflectivity >= 1.0)
     )
     {
-        return vec3(0.0);
+        return vec3(0);
     }
 
 
@@ -249,14 +354,6 @@ vec3 GetLitColor(
         {
             ToLightSource = SceneLights[i].Position - HitResult.HitLocation;
 
-            // float D = (ToLightSource.x * ToLightSource.x) + (ToLightSource.y * ToLightSource.y) + (ToLightSource.z * ToLightSource.z);
-
-            // //exclude regions outside light's radius
-            // if( D > (CurrentLight.Radius * CurrentLight.Radius) )
-            // {
-            //     continue;
-            // }
-             
         }
         else if( SceneLights[i].Type == LIGHT_DIRECTIONAL )
         {
@@ -266,18 +363,22 @@ vec3 GetLitColor(
 
         if( SceneLights[i].bCastShadow )
         {
-            
-            if( 
-                ShadowTrace(
+            float D = ShadowTrace(
                     SceneObjects,
                     TotalSceneObjects,
-                    HitResult.HitLocation + 0.001,
+                    HitResult.HitLocation,
                     normalize(ToLightSource)
-                )  
-                <= length(ToLightSource)
-            ) continue;
+                )  ;
 
-           
+            // AHitResult Hit = TraceScene(SceneObjects, TotalSceneObjects, HitResult.HitLocation , normalize(ToLightSource));
+            // float D = Hit.bWasAHit ? Hit.Distance : SHADOW_TRACE_NO_HIT;
+
+            if( D <= ( SceneLights[i].Type == LIGHT_DIRECTIONAL ? SHADOW_TRACE_NO_HIT - 1.0 : length(ToLightSource) ) )
+            {
+                LitColor += SceneObjects[HitResult.ObjectIndex].Color * 0.001;
+                continue;
+            }
+
         }
 
         float Attenuation = 1;
@@ -307,8 +408,14 @@ vec3 GetLitColor(
         //Specular calculation
         if( SceneObjects[HitResult.ObjectIndex].Specularity > 0.0 )
         {
+            // Blin-phong specular 
+            //vec3 HalfwayDir = normalize( -RayDirection + ToLightSource ); 
+            //float Half_Dot_Normal = max( dot(HalfwayDir, HitResult.HitNormal), 0.0 );
+
+            //phong
             vec3  ReflectedLightRay = reflect(-ToLightSource, HitResult.HitNormal);
             float Reflected_Dot_Eye = max( dot(-RayDirection, ReflectedLightRay), 0.0 );
+
             
             float SpecularDistribution = pow( Reflected_Dot_Eye, SceneObjects[HitResult.ObjectIndex].Specularity ) 
                                        * SceneLights[i].Intensity;
@@ -344,28 +451,43 @@ void Reflect(
         if( SceneObjects[OldHitResult.ObjectIndex].Reflectivity > 0.0 )
         {
             vec3 NewRay_Position  = OldHitResult.HitLocation;
-            vec3 NewRay_Direction = reflect(OldRay_Direction, OldHitResult.HitNormal);
+            vec3 NewRay_Direction = reflect(OldRay_Direction, OldHitResult.HitNormal) + OldHitResult.HitNormal;
             
-            AHitResult NewHitResult = TraceScene(SceneObjects, TotalSceneObjects, NewRay_Position, NewRay_Direction);
+            AHitResult NewHitResult = TraceScene(SceneObjects, TotalSceneObjects, NewRay_Position , NewRay_Direction);
             if(NewHitResult.bWasAHit)
             {
+                
+                //Basically if the newly hit object fully reflects it's environment a 100%
+                //there's no point mixing it's color with the previous one since
+                //this new surface itself gets it's color from somewhere else in the scene from light bounces.
+                //And it may not be physically / visually correct to mix it the previous color with this object's color either
+                //since "it gets it's color from somewhere else in the scene"
 
-                vec3 SurfaceHit_LitColor = GetLitColor(
-                    SceneLights,
-                    TotalSceneLights,
-                    SceneObjects,
-                    TotalSceneLights,
-                    NewHitResult,
-                    NewRay_Direction,
-                    RenderSetting
-                );
-                    
-                    
-                InitialLitColor = mix(
-                    InitialLitColor, 
-                    SurfaceHit_LitColor, 
-                    clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
-                );
+                //But unfortunately you might run into a visual artifact where you get some black spots on your final reflection,
+                //this is because we exceeded the maximum bounce count before getting the color
+                //this surface (100% reflective) was suppose to get.
+                //So increasing the bounce count will solve it at the expense of more computations
+                //or you can avoid 100% reflectivity so your object at least have it's own color to mix with previous color
+               
+                if(SceneObjects[NewHitResult.ObjectIndex].Reflectivity < 1.0) 
+                {
+                    vec3 SurfaceHit_LitColor = GetLitColor(
+                        SceneLights,
+                        TotalSceneLights,
+                        SceneObjects,
+                        TotalSceneLights,
+                        NewHitResult,
+                        NewRay_Direction,
+                        RenderSetting
+                    );
+                        
+                        
+                    InitialLitColor = mix(
+                        InitialLitColor, 
+                        SurfaceHit_LitColor, 
+                        clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
+                    );
+                }
                 
                 OldHitResult = NewHitResult;
                 OldRay_Position  = NewRay_Position;
@@ -375,7 +497,7 @@ void Reflect(
             {
                 InitialLitColor = mix(
                     InitialLitColor, 
-                    texture(iCubemap, NewRay_Direction).rgb ,
+                    RenderSetting.bUseSkyBox ? texture(iCubemap, NewRay_Direction).rgb : EnvironmentColor,
                     clamp(SceneObjects[OldHitResult.ObjectIndex].Reflectivity, 0.0, 1.0)
                   );
 
@@ -403,6 +525,6 @@ float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, v
         }
     }
     
-    return 1000000;
+    return SHADOW_TRACE_NO_HIT;
 }
-//LIGHT_DEF_END
+

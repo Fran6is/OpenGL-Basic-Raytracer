@@ -1,8 +1,7 @@
-//WHOLE_START
+WHOLE_START
 
-//COMMON_HEADER
-
-//LIGHT_HEADER
+COMMON_H
+LIGHT_H
 
 void main()
 {
@@ -19,6 +18,9 @@ void main()
     //Get object index in alpha channel and convert to an int
     int PixelID  = int(texture(iGPosition, TexCoord).a);
     //
+
+    //TODO:
+    //Image based lighting with cube maps
 
     vec3 LitColor = vec3(0);
     if( WasAHitFromPixelID(PixelID) )
@@ -55,21 +57,17 @@ void main()
             );
 
         }
-        
     }
     else 
     {
 
-        LitColor = texture(iCubemap, RayDirection).rgb;
+        LitColor = IRenderSetting.bUseSkyBox ? texture(iCubemap, RayDirection).rgb : EnvironmentColor;
 
     }
 
-    GPosition.rgb = LitColor;
+    GPosition.rgb =  LitColor;
     GPosition.a   = PixelID;
 }
-
-//COMMON_DEF
-
-//LIGHT_DEF
-
-//WHOLE_END
+COMMON_IMP
+LIGHT_IMP
+WHOLE_END

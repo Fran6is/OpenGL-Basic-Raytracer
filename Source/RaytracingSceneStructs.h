@@ -11,7 +11,7 @@ struct Object
     int   ID;
     vec3  Position = vec3(0);
     float Scale = 1;
-    vec2  Rotation = vec2(0);  // will be ignored for spheres
+    vec2  Rotation = vec2(0);  // only used for planes. Yaw = y and Pitch = x
 
     vec3  Color = vec3(0.1f);
     float Diffuseness  = 1;    //btw 0 and 1; will be clamped in shader
@@ -26,7 +26,7 @@ struct Light
 {
     int  Type = LIGHT_POINT;
     vec3 Position  = vec3(0, 100, 0);
-    vec3 Direction = vec3(1, 1, 0);
+    vec3 Direction = vec3(0, -1, 0);
 
     vec3  Color     = vec3(0);
     vec3  Ambient    = vec3(0.1f);
@@ -44,4 +44,5 @@ struct RenderSettings
 {
     int  ShadingType = SHADING_DIFFUSE;
     int  MaximumReflectionBounces = 1;
+    bool bUseSkyBox = false;
 };

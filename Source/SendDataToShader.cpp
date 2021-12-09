@@ -85,6 +85,8 @@ void SendRenderDataToShader(const RenderSettings& RenderSetting, const Shader& S
     ShaderProgram.SetInt("IRenderSetting.ShadingType", RenderSetting.ShadingType );
 
     ShaderProgram.SetInt("IRenderSetting.MaximumReflectionBounces", RenderSetting.MaximumReflectionBounces );
+
+    ShaderProgram.SetBool("IRenderSetting.bUseSkyBox", RenderSetting.bUseSkyBox);
     
 }
 void SendRenderDataToShader( const std::vector<Object>& SceneObjects, const Shader& ShaderProgram )

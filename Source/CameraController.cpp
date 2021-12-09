@@ -135,7 +135,7 @@ void ACameraController::Statics_OnMousePositionChange(GLFWwindow* Window, double
 	DeltaY *= -1.f; //y invert
 
 
-	//Basically don't apply a Delta Rotation if the left mouse button is not down, 
+	//Basically don't apply a Delta Rotation if the left mouse button is released, 
 	//but do update the mouse position to the current values so we don't suddenly "jump rotate" on the next click because the delta angle was large
 	if (CameraControllerRef->LeftMouseButtonIsDown()) 
 	{
