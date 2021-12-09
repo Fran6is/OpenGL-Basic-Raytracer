@@ -9,7 +9,9 @@ uniform mat3  ICameraBasis    = mat3(1.0);
 uniform vec3  ICameraPosition = vec3(0.0);
 uniform float ICameraFOV      = 90;
 
-struct AHitResult { bool bWasAHit; vec3 HitLocation; vec3 HitNormal; int ObjectIndex; float Distance; };
+struct AHitResult { bool bWasAHit; vec3 HitLocation; vec3 HitNormal; int ObjectIndex; float Distance;  };
+
+const float TinyOffset = 0.001; //keep this distance from an already hit surface if tracing another ray from there. Used by shadow and plane-ray ray cast
 
 #define OBJECT_PLANE  12
 #define OBJECT_SPHERE 100
@@ -20,12 +22,12 @@ struct Object
     int   ID;
     vec3  Position;
     float Scale;
+    mat3  Basis; 
 
     vec3  Color;
     float Diffuseness;
     float Specularity;
     float Reflectivity; //btw 0 and 1
-    float IOR;
 };
 
 const int TOTAL_SCENE_OBJECTS = 5;
@@ -86,7 +88,7 @@ AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObject
     AHitResult FinalHitResult;
     FinalHitResult.bWasAHit = false;
     
-    float Closest_Distance = -1.0;
+    float Closest_Distance = 100000.0;
     bool  bFirstTimeCheck = true;
 
     int Closest_Index = 0;
@@ -129,17 +131,48 @@ AHitResult TraceScene (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObject
 
 AHitResult PlaneRayIntersection(Object Plane, vec3 RayPosition, vec3 RayDirection)
 {
-    float DistanceToPlane = -1.0;
-
+    //Plane line intersection equation
+    //Review at https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+    
 	AHitResult Result;
 	Result.bWasAHit = false;
-    const float CLIP_DISTANCE = 1.0;
+    vec3 PlaneNormal = Plane.Basis[1];
 
-	if(DistanceToPlane >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
-    {
+    // assuming vectors are all normalized
+    float Denominator = dot( PlaneNormal, RayDirection); 
 
-    }
+    //if the dot product btw the plane normal and ray direction is equal to zero, then the ray won't intercept the plane
+    //because they are perpendicular. Or some value close to zero due to floating point precision
 
+    if( abs(Denominator) > 0.00006 ) 
+    { 
+        vec3 RayToPlane = Plane.Position - RayPosition;
+
+        float T = dot(RayToPlane, PlaneNormal) / Denominator;
+
+        //if 'RayToPlane' dot 'PlaneNormal' = 0, then the ray is exactly on the plane
+        //this might affect reflection traces since they start exactly on the plane
+        //Solution is to add a small offset in the direction of the ray's normal when sending final hit location
+
+        if(T >= 0.)
+        {
+            vec3 SupposedPointOnPlane = RayPosition + RayDirection * T;
+
+            vec3 DistanceToPlane =  abs( transpose(Plane.Basis) * (SupposedPointOnPlane - Plane.Position) ) - vec3(Plane.Scale);            
+            
+            DistanceToPlane = max(DistanceToPlane, vec3(0.0));
+
+            if( length(DistanceToPlane) <= TinyOffset )
+            {
+                Result.bWasAHit    = true;
+                Result.HitLocation = SupposedPointOnPlane + PlaneNormal * TinyOffset;
+                Result.HitNormal   = PlaneNormal;
+                Result.Distance    = T;
+            }
+
+        }
+    } 
+     
     return Result;
 }
 
@@ -151,23 +184,26 @@ AHitResult SphereRayIntersection(Object Sphere, vec3 RayPosition, vec3 RayDirect
 
 	AHitResult HitResult;
 	HitResult.bWasAHit = false;
-    const float CLIP_DISTANCE = 0.001;
 
-	if(DistanceToSphere >= CLIP_DISTANCE ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
+	if(DistanceToSphere >= 1.0 ) //Must be at least the specified distance "in front" of the camera. Not behind or too close
 	{
 		float Y = length( (RayPosition + RayDirection * DistanceToSphere) - Sphere.Position );
 
 		if(Y <= Sphere.Scale) //Distance to ray projection end point must be inside the sphere 
 		{
-			float X = Sphere.Scale * Sphere.Scale - Y * Y; //this will evaluate to a negative value if we're inside the sphere
-            if(X < 0.0) return HitResult; 
+			float X = sqrt( Sphere.Scale * Sphere.Scale - Y * Y ); 
 
-            X = sqrt(X);
+            //T1 will be negative if ray is inside the sphere because then X will be greater than 'DistanceToSphere'
+            //T2 at this point will be outside the sphere rather than on it (on the exit side) because 
+            //we'll be adding to 'DistanceToSphere'
 
-            float T1 = DistanceToSphere - X; //first point of ray intersection with the sphere
-            float T2 = DistanceToSphere + X; //second point of intersection/ray exit point
+            //If ray position is exactly on the surface, then T1 will equal 0 ; and T2 is the distance to the exit location (as usual)
+            //T1 = T2 when there's only one entry and exit
 
-			HitResult.bWasAHit     = true;
+            float T1 = DistanceToSphere - X; //Entry
+            float T2 = DistanceToSphere + X; //Exit
+
+			HitResult.bWasAHit    = true;
 			HitResult.HitLocation = RayPosition + RayDirection * T1;
 			HitResult.HitNormal   = normalize( HitResult.HitLocation - Sphere.Position );
 			HitResult.Distance    = T1;

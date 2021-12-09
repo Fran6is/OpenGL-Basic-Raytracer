@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 11)
 
 configure_file(CMakeProjectMacros.h.in Project-macros/CMakeProjectMacros.h)
 
-#TODO: Find some other way to add these files
 add_executable(Raytracing 
             Source/App.cpp 
             Source/GlmTransformsPrint.h
@@ -17,10 +16,6 @@ add_executable(Raytracing
             Source/Camera.cpp
             Source/CameraController.h
             Source/CameraController.cpp
-            Source/SaveBase.h
-            Source/SaveBase.cpp
-            Source/SaveCamera.h
-            Source/SaveCamera.cpp
             Source/Path.h
             Source/Path.cpp
             Source/FilesCopy.h

@@ -38,10 +38,10 @@ class Camera
     glm::vec3 XVector  = glm::vec3(0);
 	glm::vec3 YVector  = glm::vec3(0);
     glm::vec3 ZVector  = glm::vec3(0);
-    glm::vec3 CameraPosition = glm::vec3(0, 0, -10);
+    glm::vec3 CameraPosition = glm::vec3(0.69f, 12.75f, -28.17f);
 
-	float Yaw   {};
-	float Pitch {};
+	float Yaw   {-5};
+	float Pitch {-25};
 
 public:
 	Camera();
@@ -54,7 +54,4 @@ public:
     const glm::vec3& GetCameraZVector() const{ return ZVector; }
     const glm::vec3& GetCameraPosition() const{ return CameraPosition; }
 	FCameraDefinition& GetCameraSpecification() { return CameraDefinition; }
-
-	static float NearPlane;
-	static float FarPlane;
 };

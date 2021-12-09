@@ -49,6 +49,8 @@ void ACameraController::Tick()
 	    return;
     }
 
+    //std::cout << CameraPosition << "\t Yaw = " << CurrentRotation.Yaw << "\t pitch = " << CurrentRotation.Pitch << "\n";
+
     if(LeftMouseButtonIsDown())
     {
         glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

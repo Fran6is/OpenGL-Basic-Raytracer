@@ -55,10 +55,7 @@ void main()
             );
 
         }
-        else if( (ISceneObjects[HitResult.ObjectIndex].IOR > 0.) && (IRenderSetting.ShadingType == SHADING_DIFFUSE_REFRACT)  )
-        {
-
-        }
+        
     }
     else 
     {

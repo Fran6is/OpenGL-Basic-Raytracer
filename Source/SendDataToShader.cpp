@@ -60,9 +60,6 @@ void SendRenderDataToShader( const std::vector<Light>& SceneLights, const Shader
         sprintf(buffer, "ISceneLights[%i].Direction", i);
         ShaderProgram.SetVector3(buffer, SceneLight.Direction );
 
-        sprintf(buffer, "ISceneLights[%i].Radius", i);
-        ShaderProgram.SetFloat(buffer, SceneLight.Radius );
-
         sprintf(buffer, "ISceneLights[%i].Intensity", i);
         ShaderProgram.SetFloat(buffer, SceneLight.Intensity );
 
@@ -122,9 +119,27 @@ void SendRenderDataToShader( const std::vector<Object>& SceneObjects, const Shad
         sprintf(buffer, "ISceneObjects[%i].Reflectivity", i);
         ShaderProgram.SetFloat(buffer, SceneObject.Reflectivity);
 
-        sprintf(buffer, "ISceneObjects[%i].IOR", i);
-        ShaderProgram.SetFloat(buffer, SceneObject.IOR);
+        if(SceneObject.Type == OBJECT_PLANE)
+        {
+            const float Pitch = glm::radians( glm::clamp(SceneObject.Rotation.x, -89.f, +89.f) );
+            const float Yaw   = glm::radians( SceneObject.Rotation.y );
 
+            vec3 Z, Y, X;
+            Z.z = cos( Yaw ) * cos( Pitch );
+            Z.x = sin( Yaw ) * cos( Pitch );
+            Z.y = sin( Pitch );
+
+            Y = normalize( glm::cross( Z, glm::cross( glm::vec3(0, 1, 0), Z  ) ) );
+
+            X = normalize( cross( Y, Z ) );
+
+            sprintf(buffer, "ISceneObjects[%i].Basis", i);
+            ShaderProgram.SetMat3(
+                buffer, 
+                mat3(X, Y, Z)
+            );
+        }
+        
         i++;
     }
     

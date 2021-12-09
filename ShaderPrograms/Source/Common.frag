@@ -24,7 +24,6 @@ struct Object
     float Diffuseness;
     float Specularity;
     float Reflectivity; //btw 0 and 1
-    float IOR;
 };
 
 const int TOTAL_SCENE_OBJECTS = 5;
@@ -62,7 +61,6 @@ struct Light
 
 #define SHADING_DIFFUSE 10
 #define SHADING_DIFFUSE_REFLECT 20
-#define SHADING_DIFFUSE_REFRACT 30
 
 struct RenderSettings
 {
@@ -388,22 +386,6 @@ void Reflect(
         }
     }
    
-}
-
-void Refract( /*out vec3 LitColor, Object SceneObjects[], out HitResult HitResult, Light Scenelights*/)
-{
-    vec3 RefractedColor; // initialized with lit color from previous stage
-    //Pass in the lit color calculated from previous step and
-    //blend with refract output
-
-    //if refracted vector doesn't hit anything leave lit color as is
-
-    //but only do this if
-    //if(shading == diffuse_refract || shading == diffuse_reflect_refract)
-            //calculate refraction 
-
-    
-    //LitColor = RefractedColor;
 }
 
 float ShadowTrace (Object SceneObjects[TOTAL_SCENE_OBJECTS], int TotalObjects, vec3 RayPosition, vec3 RayDirection)

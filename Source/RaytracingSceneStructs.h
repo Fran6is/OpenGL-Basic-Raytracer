@@ -11,12 +11,12 @@ struct Object
     int   ID;
     vec3  Position = vec3(0);
     float Scale = 1;
+    vec2  Rotation = vec2(0);  // will be ignored for spheres
 
     vec3  Color = vec3(0.1f);
     float Diffuseness  = 1;    //btw 0 and 1; will be clamped in shader
     float Specularity  = 100;  //specular distribution on surface will be raised to this value
     float Reflectivity = -1;   // (r <= 0) == 'non reflective'; (r > 0 && r <= 1) == 'reflective
-    float IOR = -1;
 };
 
 #define LIGHT_DIRECTIONAL 1000
@@ -24,14 +24,12 @@ struct Object
 
 struct Light
 {
-    int Type = LIGHT_POINT;
-    int ID;
+    int  Type = LIGHT_POINT;
     vec3 Position  = vec3(0, 100, 0);
     vec3 Direction = vec3(1, 1, 0);
-    float Radius = 2;
 
     vec3  Color     = vec3(0);
-    vec3 Ambient    = vec3(0.1f);
+    vec3  Ambient    = vec3(0.1f);
     float Intensity = 100;
     float Attenuation_Linear    = 1.f;;
     float Attenuation_Quadratic = 1.0f;
@@ -41,7 +39,6 @@ struct Light
 
 #define SHADING_DIFFUSE 10
 #define SHADING_DIFFUSE_REFLECT 20
-#define SHADING_DIFFUSE_REFRACT 30
 
 struct RenderSettings
 {

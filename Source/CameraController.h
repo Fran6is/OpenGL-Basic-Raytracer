@@ -2,22 +2,27 @@
 #include "Camera.h"
 #include <GLFW/glfw3.h>
 
+struct FMouseMovement
+{
+	double LastX = 0.0;
+	double LastY = 0.0;
+	bool bFirstTime = true;
+};
+
+struct EulerAngles
+{
+	float Yaw   = 0.0f;
+	float Pitch = 0.0f;
+};
+
 class ACameraController
 {
-	struct FMouseMovement
-	{
-		double LastX = 0.0;
-		double LastY = 0.0;
-		bool bFirstTime = true;
-	} MouseInfo;
-
-	struct EulerAngles
-	{
-		float Yaw = 0.0f;
-		float Pitch = 0.0f;
-	} CurrentRotation;
-
+	
 private:
+
+	FMouseMovement MouseInfo;
+	EulerAngles    CurrentRotation;
+
 	Camera* MountedCamera = nullptr;
 
 	glm::vec3 CameraXVector = glm::vec3(0);

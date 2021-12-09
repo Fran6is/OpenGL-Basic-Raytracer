@@ -85,6 +85,7 @@ void Framebuffer::SelectAttachmentsToDrawTo(std::function< bool ( const std::str
     std::vector<GLuint> DrawableAttachments;
     DrawableAttachments.reserve(TextureAttachments.size());
 
+    std::cout << "\n";
     for (const auto &Tex : TextureAttachments)
     {
         if( Predicate(Tex.first) ) //{ AttachmentName, {TextureID, Framebuffer Attachment point} }
@@ -93,6 +94,8 @@ void Framebuffer::SelectAttachmentsToDrawTo(std::function< bool ( const std::str
             std::cout << "Selected attachment'" << Tex.first << "'\t Index / output /layout location = " << DrawableAttachments.size()-1 << "\n";
         }
     }
+    std::cout << "\n";
+
 
     //Whaever order / index these attachments were placed in the array, those are the same indices to
     //dump appropriate content in your shader.
@@ -109,6 +112,8 @@ void Framebuffer::SelectAttachmentsToDrawTo( const std::vector<const char*>& Att
     std::vector<GLuint> DrawableAttachments;
     DrawableAttachments.reserve(TextureAttachments.size());
 
+    std::cout << "\n";
+
     for ( auto &Name : AttachmentNames)
     {
         try
@@ -122,6 +127,8 @@ void Framebuffer::SelectAttachmentsToDrawTo( const std::vector<const char*>& Att
             std::cerr << "\nException::" << e.what() << "\t'" << Name << "' doesn't exist\n";
         }
     }
+    
+    std::cout << "\n";
 
     glBindFramebuffer(GL_FRAMEBUFFER, BufferID);
     glDrawBuffers(DrawableAttachments.size(), DrawableAttachments.data()); 
