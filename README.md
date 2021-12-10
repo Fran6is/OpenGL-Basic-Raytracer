@@ -7,11 +7,8 @@
 - Reflection
 - **Render passes:** Geometry, Light, and Post process
 - **Post processing:** HDR mapping, Gamma correction
-- **Traced Shapes:** Spheres and Planes
+- **Traced shapes:** Spheres and Planes
 - **Lights:** Directional and point (W shadow casts )
-- Framebuffer with two texture atachments for Render passes
-- Cubemap
-- Shadows ( *directional and point lights* )
 
 <hr>
 
@@ -22,11 +19,11 @@
 
 - **Mouse movement:** Camera rotation
 
-- **Mouse Scroll:** Camera zoom  (FOV)  
+- **Mouse scroll:** Camera zoom  (FOV)  
 
 <hr>
 
-***Platform build***: x86 or all configurations
+***Platform build***: x86 / all configurations
 
 ***OpenGL***: GLSL3.3, OpenGL32.lib, glad
 
