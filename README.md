@@ -5,7 +5,7 @@
 
 - Phong illumination
 - Reflection
-- **Render passes:** Geometry, Lighting, and Post processing
+- **Render passes:** Geometry, Light, and Post process
 - **Post processing:** HDR mapping, Gamma correction
 - **Traced Shapes:** Spheres and Planes
 - **Lights:** Directional and point (W shadow casts )
