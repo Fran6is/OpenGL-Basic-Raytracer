@@ -42,7 +42,7 @@ std::vector< const Shader* > ShaderProgramsWindowResize;        //Accessed by fu
 
 int main()
 {
-    CombineShaderModules();
+    //CombineShaderModules();
     
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

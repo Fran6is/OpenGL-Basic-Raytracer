@@ -1,4 +1,4 @@
-# A basic ray tracer using OpenGL, and C++
+# A basic ray tracer using OpenGL and C++
 <hr>
 
 ## Features / Pipeline: 
@@ -26,15 +26,13 @@
 
 <hr>
 
-***Project Build***: x86 or all configuration 
+***Project Build platform***: x86 or all configurations
 
 ***OpenGL***: GLSL3.3, OpenGL32.lib, glad
 
 ***Windowing***: GLFW
 
 ***Math library***: GLM
-
-- ***
 
 <hr>
 
