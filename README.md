@@ -26,7 +26,7 @@
 
 <hr>
 
-***Project Build platform***: x86 or all configurations
+***Platform build***: x86 or all configurations
 
 ***OpenGL***: GLSL3.3, OpenGL32.lib, glad
 
