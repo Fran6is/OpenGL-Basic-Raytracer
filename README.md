@@ -1,4 +1,4 @@
-# A basic ray tracer using OpenGL and C++
+# A basic raytracer using OpenGL and C++
 <hr>
 
 ## Features / Pipeline: 
