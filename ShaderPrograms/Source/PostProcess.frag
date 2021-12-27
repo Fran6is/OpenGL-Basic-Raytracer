@@ -43,21 +43,18 @@ void main(void)
 
         InCameraSpace.xy = InCameraSpace.xy * Proj / InCameraSpace.z;
         
-        //if light xy position is beyond -1 and +1. Basically no need to draw a circle not in view
-        //in x or  y. Of which we can 'skip' drawing if light is beyond -+1.
-        //but then again the light might just 'vanish' when it gets to the edge -+1 of the camera
+        //if light xy position is beyond -1 and +1. Then no need to draw a circle
+        
         if( InCameraSpace.z <= 0 /*|| abs(InCameraSpace.x) > 1.0 || abs(InCameraSpace.y) > 1.0*/ || ISceneLights[i].Intensity <= 0) continue;
 
         InCameraSpace.z = 1.0 / (InCameraSpace.z + 1.0); //will be our light circle radius
         //BUG:
         //if z is 0 or -, the expression can evaluate to some radius enough to 
-        //calculate a circle even when the light is behind the camera
+        //calculate a circle to cover our view even when the light is behind the camera
         //Ex. z = -0.5  which will be 1 / (-0.5 + 1)  = 0.5
         //Ex. z = -0.75 which will be 1 / (-0.75 + 1) = 0.25
-        //Ex. z = -1    which will be 1 / (-1 + 1)    = 0 . not a big deal, we just simply return from the function
-        //Solution: check if z is negative 
-
-         //light is behind the camera
+        //Ex. z = -1    which will be 1 / (-1 + 1)    = 0.   
+        //SOLUTION: check if z is negative 
 
         LightsAsCircles += ISceneLights[i].Color 
                          * ISceneLights[i].Intensity 
