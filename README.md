@@ -33,6 +33,23 @@
 
 <hr>
 
+## CMake build (With CMake installed and command prompt opened in project's root directory)
+
+- Generate project files for x86 platform ( in this case win32 )
+```
+[Project root directory]: cmake . -B build -A Win32
+```
+- Build project
+```
+[Project root directory]: cmake --build build -t Raytracing
+[Project root directory]: cd build/Debug
+[Project root directory / build / Debug]: Raytracing
+```
+
+
+
+<hr>
+
 ![img](https://res.cloudinary.com/asuelimf/image/upload/v1639091954/ProjectScreenshots/Raytracing1_zrvzmm.png)
 
 ![img](https://res.cloudinary.com/asuelimf/image/upload/v1638944428/ProjectScreenshots/raytracing3_uk8zy7.png)
